@@ -19,7 +19,6 @@
       --accent:#7aa2ff;
       --shadow: 0 10px 30px rgba(0,0,0,.35);
       --r:16px;
-      --pad:16px;
       --pad2:22px;
       --w: 980px;
     }
@@ -78,7 +77,6 @@
       background: rgba(255,107,107,.12);
       border-color: rgba(255,107,107,.45);
     }
-
     .pill{
       display:flex; align-items:center; gap:8px;
       padding:7px 10px;
@@ -121,7 +119,7 @@
     .section-title h2{margin:0; font-size:16px}
     .card p{margin:0; color:var(--muted)}
 
-    /* Mobile header alignment fix (not just Export) */
+    /* Mobile header alignment fix */
     @media (max-width: 560px){
       .section-title{
         flex-direction:column;
@@ -349,7 +347,7 @@
     }
     .footer-left, .footer-right{display:flex; gap:8px; align-items:center}
 
-    /* Mobile-friendly report (owner + shared): table on desktop, cards on mobile */
+    /* Mobile-friendly report: table on desktop, cards on mobile */
     .report-cards { display:none; margin-top:10px; }
     .report-card{
       border:1px solid rgba(37,42,54,.9);
@@ -402,11 +400,11 @@
 
       <div class="spacer"></div>
 
-      <!-- Desktop nav: no Settings -->
+      <!-- Desktop nav -->
       <div class="nav-desktop">
         <button id="navHome" class="ghost">Home</button>
-        <button id="navHistory">History</button>
         <button id="navLog" class="primary">Log</button>
+        <button id="navHistory">History</button>
         <button id="navExport">Export</button>
       </div>
 
@@ -426,14 +424,12 @@
             <h2>Home</h2>
           </div>
 
-          <!-- BIG primary CTA -->
           <div class="row">
             <button class="primary" id="homeLogNow" style="width:100%; padding:14px 16px; font-size:15px; border-radius:16px;">
               Log Chest Pain
             </button>
           </div>
 
-          <!-- Resume draft -->
           <div id="resumeDraftBox" class="subcard" style="display:none;">
             <h3>Resume draft</h3>
             <div class="muted" id="draftSummary"></div>
@@ -472,7 +468,6 @@
         <div class="section-title">
           <h2>History</h2>
           <div class="row no-print" style="justify-content:flex-end;">
-            <!-- defaults: 7 days + all severities -->
             <select id="historyRange">
               <option value="7" selected>Last 7 days</option>
               <option value="30">Last 30 days</option>
@@ -555,7 +550,6 @@
             <div id="reportCards" class="report-cards"></div>
           </div>
 
-          <!-- Advanced tools moved here (since Settings tab removed) -->
           <div class="subcard no-print">
             <h3>Advanced</h3>
             <div class="row" style="margin-top:10px;">
@@ -616,7 +610,7 @@
     </div>
   </div>
 
-  <!-- Mobile bottom tab bar (order: Home -> Log -> History -> Export) -->
+  <!-- Mobile bottom tab bar: Home -> Log -> History -> Export -->
   <div class="tabbar no-print" id="tabbar">
     <div class="tabbar-inner">
       <button class="tabbtn" id="tabHome">Home</button>
@@ -635,7 +629,6 @@
           <div class="sub" id="sheetSub">Draft saves automatically while you type.</div>
         </div>
         <div class="sheet-actions">
-          <!-- dynamic buttons: Save / Close / Discard (Save is in footer; header has Close + Discard for quick access) -->
           <button id="closeSheet" class="ghost">Close</button>
           <button id="discardDraftBtnHeader" class="danger">Discard</button>
         </div>
@@ -671,7 +664,6 @@
         <div>
           <label>Pain type</label>
           <div id="painTypeChips" class="chips"></div>
-          <!-- OTHER text field -->
           <div id="painTypeOtherWrap" style="display:none; margin-top:10px;">
             <label>Describe “Other”</label>
             <input id="painTypeOtherText" type="text" maxlength="80" placeholder="e.g., stabbing, prickly, etc." />
@@ -706,7 +698,7 @@
           <div class="help"><span id="notesCount">0</span>/500</div>
         </div>
 
-        <!-- BIG Save button placed BEFORE Optional vitals -->
+        <!-- Big Save button before Optional vitals -->
         <div style="grid-column: 1 / -1;" class="no-print">
           <button id="saveSheetInline" class="primary" style="width:100%; padding:16px 16px; font-size:16px; border-radius:16px;">
             Save log
@@ -747,7 +739,6 @@
     collection, query, orderBy, limit, getDocs, onSnapshot, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-  // Firebase config (public by design for web apps)
   const firebaseConfig = {
     apiKey: "AIzaSyAY9or2wznVWfjmcA7t8zmvP4tij4GV0Vc",
     authDomain: "chest-pain-tracker.firebaseapp.com",
@@ -774,8 +765,6 @@
 
   const IDB_NAME = "cpt_db_v4";
   const IDB_VER = 1;
-  const META_DRAFT = "draft";
-  const META_SHARE = "share_token";
 
   let UID = null;
   let EPISODES = [];
@@ -786,7 +775,7 @@
   let draftTimer = null;
   let editSyncTimer = null;
   let lastWriteError = null;
-  let unsub = null;
+  let unsubMeta = null;
 
   function setSync(status){
     const pill = $("syncPill");
@@ -804,12 +793,9 @@
       const el = $("view"+v);
       if(el) el.classList.toggle("active", v.toLowerCase() === name.toLowerCase());
     });
-    Object.values({home:"tabHome",history:"tabHistory",export:"tabExport"}).forEach(id=> $(id)?.classList.remove("active"));
-    const key = name.toLowerCase();
-    if(key === "home") $("tabHome")?.classList.add("active");
-    if(key === "history") $("tabHistory")?.classList.add("active");
-    if(key === "export") $("tabExport")?.classList.add("active");
-    // NOTE: Log is a modal; we don't set an "active" state for it.
+    $("tabHome")?.classList.toggle("active", name==="Home");
+    $("tabHistory")?.classList.toggle("active", name==="History");
+    $("tabExport")?.classList.toggle("active", name==="Export");
   }
 
   function showModal(){
@@ -868,8 +854,7 @@
       req.onupgradeneeded = () => {
         const d = req.result;
         if(!d.objectStoreNames.contains("episodes")){
-          const s = d.createObjectStore("episodes", { keyPath:"id" });
-          s.createIndex("startAt", "startAt", { unique:false });
+          d.createObjectStore("episodes", { keyPath:"id" });
         }
         if(!d.objectStoreNames.contains("meta")){
           d.createObjectStore("meta", { keyPath:"key" });
@@ -916,70 +901,6 @@
     });
   }
 
-  // Chips
-  function updateChipSelection(container, value, isMulti){
-    [...container.children].forEach(el=>{
-      const selected = isMulti ? safeArray(value).includes(el.textContent) : (value === el.textContent);
-      el.classList.toggle("selected", selected);
-    });
-  }
-  function renderSingleChips(containerId, options, getter, setter, onAfter){
-    const el = $(containerId);
-    el.innerHTML = "";
-    options.forEach(opt=>{
-      const c = document.createElement("div");
-      c.className = "chip";
-      c.textContent = opt;
-      c.onclick = ()=>{
-        setter(opt);
-        updateChipSelection(el, getter(), false);
-        if(typeof onAfter === "function") onAfter(opt);
-        onFormChange();
-      };
-      el.appendChild(c);
-    });
-    updateChipSelection(el, getter(), false);
-  }
-  function renderMultiChips(containerId, options, getter, setter){
-    const el = $(containerId);
-    el.innerHTML = "";
-    options.forEach(opt=>{
-      const c = document.createElement("div");
-      c.className = "chip";
-      c.textContent = opt;
-      c.onclick = ()=>{
-        const set = new Set(getter());
-        if(opt === "None"){
-          if(set.has("None")) set.delete("None"); else { set.clear(); set.add("None"); }
-        } else {
-          set.delete("None");
-          if(set.has(opt)) set.delete(opt); else set.add(opt);
-        }
-        setter([...set]);
-        updateChipSelection(el, getter(), true);
-        onFormChange();
-      };
-      el.appendChild(c);
-    });
-    updateChipSelection(el, getter(), true);
-  }
-  function renderDurationChips(){
-    const el = $("durationChips");
-    el.innerHTML = "";
-    ENUMS.durationMins.forEach(mins=>{
-      const c = document.createElement("div");
-      c.className = "chip";
-      c.textContent = mins >= 120 ? "120+ min" : `${mins} min`;
-      c.onclick = ()=>{
-        const start = parseDTLocal($("startAt").value);
-        if(!start) return;
-        $("endAt").value = toDTLocal(new Date(start.getTime() + mins*60000));
-        onFormChange();
-      };
-      el.appendChild(c);
-    });
-  }
-
   function buildDefaultDraft(){
     return {
       startAt: new Date().toISOString(),
@@ -1009,28 +930,73 @@
     return Number.isFinite(n) ? n : null;
   }
 
-  function getFormState(){
-    const start = parseDTLocal($("startAt").value);
-    const ongoing = $("ongoing").value === "true";
-    const end = ongoing ? null : parseDTLocal($("endAt").value);
+  function newId(){ return crypto.randomUUID(); }
 
-    const vitals = {
-      hr: numOrNull($("v_hr").value),
-      spo2: numOrNull($("v_spo2").value),
-      bpSys: numOrNull($("v_bpsys").value),
-      bpDia: numOrNull($("v_bpdia").value)
-    };
-    const vitalsNonEmpty = Object.values(vitals).some(v=>v!==null) ? vitals : null;
+  // Chips
+  function updateChipSelection(container, value, isMulti){
+    [...container.children].forEach(el=>{
+      const selected = isMulti ? safeArray(value).includes(el.textContent) : (value === el.textContent);
+      el.classList.toggle("selected", selected);
+    });
+  }
 
-    return {
-      startAt: start ? start.toISOString() : null,
-      ongoing,
-      endAt: end ? end.toISOString() : null,
-      severity: Number($("severity").value),
-      notes: ($("notes").value || "").trim(),
-      painTypeOtherText: ($("painTypeOtherText").value || "").trim(),
-      vitals: vitalsNonEmpty
-    };
+  function renderSingleChips(containerId, options, getter, setter, onAfter){
+    const el = $(containerId);
+    el.innerHTML = "";
+    options.forEach(opt=>{
+      const c = document.createElement("div");
+      c.className = "chip";
+      c.textContent = opt;
+      c.onclick = ()=>{
+        setter(opt);
+        updateChipSelection(el, getter(), false);
+        if(typeof onAfter === "function") onAfter(opt);
+        onFormChange();
+      };
+      el.appendChild(c);
+    });
+    updateChipSelection(el, getter(), false);
+  }
+
+  function renderMultiChips(containerId, options, getter, setter){
+    const el = $(containerId);
+    el.innerHTML = "";
+    options.forEach(opt=>{
+      const c = document.createElement("div");
+      c.className = "chip";
+      c.textContent = opt;
+      c.onclick = ()=>{
+        const set = new Set(getter());
+        if(opt === "None"){
+          if(set.has("None")) set.delete("None"); else { set.clear(); set.add("None"); }
+        } else {
+          set.delete("None");
+          if(set.has(opt)) set.delete(opt); else set.add(opt);
+        }
+        setter([...set]);
+        updateChipSelection(el, getter(), true);
+        onFormChange();
+      };
+      el.appendChild(c);
+    });
+    updateChipSelection(el, getter(), true);
+  }
+
+  function renderDurationChips(){
+    const el = $("durationChips");
+    el.innerHTML = "";
+    ENUMS.durationMins.forEach(mins=>{
+      const c = document.createElement("div");
+      c.className = "chip";
+      c.textContent = mins >= 120 ? "120+ min" : `${mins} min`;
+      c.onclick = ()=>{
+        const start = parseDTLocal($("startAt").value);
+        if(!start) return;
+        $("endAt").value = toDTLocal(new Date(start.getTime() + mins*60000));
+        onFormChange();
+      };
+      el.appendChild(c);
+    });
   }
 
   function syncPainTypeOtherUI(){
@@ -1044,6 +1010,17 @@
       $("painTypeOtherText").value = DRAFT?.painTypeOtherText || "";
       $("painTypeOtherCount").textContent = String(($("painTypeOtherText").value||"").length);
     }
+  }
+
+  function initChips(){
+    if(!DRAFT) DRAFT = buildDefaultDraft();
+    renderSingleChips("painTypeChips", ENUMS.painType, ()=>DRAFT.painType, (v)=>{ DRAFT.painType=v; }, ()=>syncPainTypeOtherUI());
+    renderSingleChips("locationChips", ENUMS.location, ()=>DRAFT.location, (v)=>{ DRAFT.location=v; });
+    renderSingleChips("activityChips", ENUMS.activity, ()=>DRAFT.onsetActivity, (v)=>{ DRAFT.onsetActivity=v; });
+    renderMultiChips("reliefChips", ENUMS.relief, ()=>safeArray(DRAFT.relief), (arr)=>{ DRAFT.relief=arr; });
+    renderMultiChips("symptomChips", ENUMS.symptoms, ()=>safeArray(DRAFT.symptoms), (arr)=>{ DRAFT.symptoms=arr; });
+    renderDurationChips();
+    syncPainTypeOtherUI();
   }
 
   function applyForm(d){
@@ -1073,16 +1050,37 @@
     syncPainTypeOtherUI();
   }
 
-  function onFormChange(){
+  function getFormState(){
+    const start = parseDTLocal($("startAt").value);
+    const ongoing = $("ongoing").value === "true";
+    const end = ongoing ? null : parseDTLocal($("endAt").value);
+
+    const vitals = {
+      hr: numOrNull($("v_hr").value),
+      spo2: numOrNull($("v_spo2").value),
+      bpSys: numOrNull($("v_bpsys").value),
+      bpDia: numOrNull($("v_bpdia").value)
+    };
+    const vitalsNonEmpty = Object.values(vitals).some(v=>v!==null) ? vitals : null;
+
+    return {
+      startAt: start ? start.toISOString() : null,
+      ongoing,
+      endAt: end ? end.toISOString() : null,
+      severity: Number($("severity").value),
+      notes: ($("notes").value || "").trim(),
+      painTypeOtherText: ($("painTypeOtherText").value || "").trim(),
+      vitals: vitalsNonEmpty
+    };
+  }
+
+  async function onFormChange(){
     if(!DRAFT) return;
 
     const s = getFormState();
     DRAFT = {
       ...DRAFT,
       ...s,
-      painType: DRAFT.painType,
-      location: DRAFT.location,
-      onsetActivity: DRAFT.onsetActivity,
       relief: safeArray(DRAFT.relief),
       symptoms: safeArray(DRAFT.symptoms),
       updatedAtLocal: new Date().toISOString()
@@ -1101,166 +1099,7 @@
       if(EDITING_ID){
         await mirrorDraftToEpisode();
       }
-    }, 320);
-  }
-
-  function newId(){ return crypto.randomUUID(); }
-
-  async function mirrorDraftToEpisode(){
-    const ep = EPISODES.find(e=>e.id===EDITING_ID);
-    if(!ep) return;
-
-    const updated = {
-      ...ep,
-      startAt: DRAFT.startAt,
-      endAt: DRAFT.endAt,
-      ongoing: DRAFT.ongoing,
-      severity: DRAFT.severity,
-      painType: DRAFT.painType,
-      painTypeOtherText: DRAFT.painTypeOtherText || "",
-      location: DRAFT.location,
-      onsetActivity: DRAFT.onsetActivity,
-      relief: safeArray(DRAFT.relief),
-      symptoms: safeArray(DRAFT.symptoms),
-      notes: DRAFT.notes || "",
-      vitals: DRAFT.vitals,
-      updatedAt: new Date().toISOString(),
-      createdAt: ep.createdAt || new Date().toISOString()
-    };
-
-    await idbPut("episodes", updated);
-    EPISODES = EPISODES.map(x => x.id===updated.id ? updated : x);
-    renderAll();
-
-    if(editSyncTimer) clearTimeout(editSyncTimer);
-    editSyncTimer = setTimeout(async ()=>{
-      await upsertEpisodeRemote(updated);
-    }, 850);
-  }
-
-  async function upsertEpisodeRemote(ep){
-    if(!UID) return;
-    if(!navigator.onLine){
-      setSync("Offline (saved locally)");
-      return;
-    }
-    try{
-      const ref = doc(db, "users", UID, "episodes", ep.id);
-      await setDoc(ref, {
-        ...ep,
-        ownerUid: UID,
-        updatedAt: serverTimestamp(),
-        createdAt: ep.createdAt ? new Date(ep.createdAt) : serverTimestamp()
-      }, { merge:true });
-      lastWriteError = null;
-    }catch(e){
-      console.error("Remote upsert failed:", e);
-      lastWriteError = e;
-      setSync("Sync error (saved locally)");
-    }
-  }
-
-  async function clearDraftOnly(){
-    DRAFT = null;
-    EDITING_ID = null;
-    await idbDelete("meta", "draft");
-    renderDraftResume();
-  }
-
-  async function discardDraft(){
-    await clearDraftOnly();
-    hideModal();
-  }
-
-  async function saveLog(){
-    if(!DRAFT) return;
-
-    if(!DRAFT.startAt){
-      alert("Please set a start time.");
-      return;
-    }
-
-    if(DRAFT.painType === "Other" && !(DRAFT.painTypeOtherText || "").trim()){
-      alert("Please describe the pain type (Other).");
-      return;
-    }
-
-    if(EDITING_ID){
-      await mirrorDraftToEpisode();
-      const ep = EPISODES.find(e=>e.id===EDITING_ID);
-      if(ep) await upsertEpisodeRemote(ep);
-      await clearDraftOnly();
-      hideModal();
-      setView("History");
-      return;
-    }
-
-    const episode = {
-      id: newId(),
-      startAt: DRAFT.startAt,
-      endAt: DRAFT.endAt,
-      ongoing: DRAFT.ongoing,
-      severity: DRAFT.severity,
-      painType: DRAFT.painType,
-      painTypeOtherText: DRAFT.painTypeOtherText || "",
-      location: DRAFT.location,
-      onsetActivity: DRAFT.onsetActivity,
-      relief: safeArray(DRAFT.relief),
-      symptoms: safeArray(DRAFT.symptoms),
-      notes: DRAFT.notes || "",
-      vitals: DRAFT.vitals,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    await idbPut("episodes", episode);
-    setSync(navigator.onLine ? "Saved locally" : "Offline (saved locally)");
-    await clearDraftOnly();
-    await loadLocalEpisodes();
-    renderAll();
-
-    await upsertEpisodeRemote(episode);
-
-    hideModal();
-    setView("History");
-  }
-
-  async function startNewDraftAndOpen(){
-    EDITING_ID = null;
-    DRAFT = buildDefaultDraft();
-    await idbPut("meta", { key: "draft", value: DRAFT });
-    $("sheetTitle").textContent = "Log an episode";
-    $("sheetSub").textContent = "Draft saves automatically while you type.";
-    applyForm(DRAFT);
-    showModal();
-  }
-
-  async function openEditEpisode(id){
-    const ep = EPISODES.find(e=>e.id===id);
-    if(!ep) return;
-    EDITING_ID = id;
-    DRAFT = {
-      ...buildDefaultDraft(),
-      ...ep,
-      relief: safeArray(ep.relief),
-      symptoms: safeArray(ep.symptoms),
-      painTypeOtherText: ep.painTypeOtherText || ""
-    };
-    await idbPut("meta", { key: "draft", value: DRAFT });
-    $("sheetTitle").textContent = "Edit episode";
-    $("sheetSub").textContent = "Draft saves automatically. Save to apply.";
-    applyForm(DRAFT);
-    showModal();
-  }
-
-  function renderDraftResume(){
-    const box = $("resumeDraftBox");
-    if(DRAFT && !EDITING_ID){
-      box.style.display = "block";
-      $("draftSummary").textContent = summarizeDraft(DRAFT);
-    } else {
-      box.style.display = "none";
-    }
+    }, 280);
   }
 
   async function loadMeta(){
@@ -1274,6 +1113,16 @@
   async function loadLocalEpisodes(){
     EPISODES = await idbGetAllEpisodes();
     EPISODES.sort((a,b)=> (b.startAt||"").localeCompare(a.startAt||""));
+  }
+
+  function renderDraftResume(){
+    const box = $("resumeDraftBox");
+    if(DRAFT && !EDITING_ID){
+      box.style.display = "block";
+      $("draftSummary").textContent = summarizeDraft(DRAFT);
+    } else {
+      box.style.display = "none";
+    }
   }
 
   function renderKPIs(){
@@ -1444,7 +1293,153 @@
     renderReport();
   }
 
-  // Share link (one active, no expiry)
+  async function upsertEpisodeRemote(ep){
+    if(!UID) return;
+    if(!navigator.onLine){
+      setSync("Offline (saved locally)");
+      return;
+    }
+    try{
+      const ref = doc(db, "users", UID, "episodes", ep.id);
+      await setDoc(ref, {
+        ...ep,
+        ownerUid: UID,
+        updatedAt: serverTimestamp(),
+        createdAt: ep.createdAt ? new Date(ep.createdAt) : serverTimestamp()
+      }, { merge:true });
+      lastWriteError = null;
+    }catch(e){
+      console.error("Remote upsert failed:", e);
+      lastWriteError = e;
+      setSync("Sync error (saved locally)");
+    }
+  }
+
+  async function mirrorDraftToEpisode(){
+    const ep = EPISODES.find(e=>e.id===EDITING_ID);
+    if(!ep) return;
+
+    const updated = {
+      ...ep,
+      startAt: DRAFT.startAt,
+      endAt: DRAFT.endAt,
+      ongoing: DRAFT.ongoing,
+      severity: DRAFT.severity,
+      painType: DRAFT.painType,
+      painTypeOtherText: DRAFT.painTypeOtherText || "",
+      location: DRAFT.location,
+      onsetActivity: DRAFT.onsetActivity,
+      relief: safeArray(DRAFT.relief),
+      symptoms: safeArray(DRAFT.symptoms),
+      notes: DRAFT.notes || "",
+      vitals: DRAFT.vitals,
+      updatedAt: new Date().toISOString(),
+      createdAt: ep.createdAt || new Date().toISOString()
+    };
+
+    await idbPut("episodes", updated);
+    EPISODES = EPISODES.map(x => x.id===updated.id ? updated : x);
+    renderAll();
+
+    if(editSyncTimer) clearTimeout(editSyncTimer);
+    editSyncTimer = setTimeout(async ()=>{
+      await upsertEpisodeRemote(updated);
+    }, 850);
+  }
+
+  async function clearDraftOnly(){
+    DRAFT = null;
+    EDITING_ID = null;
+    await idbDelete("meta", "draft");
+    renderDraftResume();
+  }
+
+  async function discardDraft(){
+    await clearDraftOnly();
+    hideModal();
+  }
+
+  async function saveLog(){
+    if(!DRAFT) return;
+
+    if(!DRAFT.startAt){
+      alert("Please set a start time.");
+      return;
+    }
+    if(DRAFT.painType === "Other" && !(DRAFT.painTypeOtherText || "").trim()){
+      alert("Please describe the pain type (Other).");
+      return;
+    }
+
+    if(EDITING_ID){
+      await mirrorDraftToEpisode();
+      const ep = EPISODES.find(e=>e.id===EDITING_ID);
+      if(ep) await upsertEpisodeRemote(ep);
+      await clearDraftOnly();
+      hideModal();
+      setView("History");
+      return;
+    }
+
+    const episode = {
+      id: newId(),
+      startAt: DRAFT.startAt,
+      endAt: DRAFT.endAt,
+      ongoing: DRAFT.ongoing,
+      severity: DRAFT.severity,
+      painType: DRAFT.painType,
+      painTypeOtherText: DRAFT.painTypeOtherText || "",
+      location: DRAFT.location,
+      onsetActivity: DRAFT.onsetActivity,
+      relief: safeArray(DRAFT.relief),
+      symptoms: safeArray(DRAFT.symptoms),
+      notes: DRAFT.notes || "",
+      vitals: DRAFT.vitals,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    await idbPut("episodes", episode);
+    setSync(navigator.onLine ? "Saved locally" : "Offline (saved locally)");
+    await clearDraftOnly();
+    await loadLocalEpisodes();
+    renderAll();
+
+    await upsertEpisodeRemote(episode);
+
+    hideModal();
+    setView("History");
+  }
+
+  async function startNewDraftAndOpen(){
+    EDITING_ID = null;
+    DRAFT = buildDefaultDraft();
+    await idbPut("meta", { key: "draft", value: DRAFT });
+    $("sheetTitle").textContent = "Log an episode";
+    $("sheetSub").textContent = "Draft saves automatically while you type.";
+    applyForm(DRAFT);
+    showModal();
+  }
+
+  async function openEditEpisode(id){
+    const ep = EPISODES.find(e=>e.id===id);
+    if(!ep) return;
+    EDITING_ID = id;
+    DRAFT = {
+      ...buildDefaultDraft(),
+      ...ep,
+      relief: safeArray(ep.relief),
+      symptoms: safeArray(ep.symptoms),
+      painTypeOtherText: ep.painTypeOtherText || ""
+    };
+    await idbPut("meta", { key: "draft", value: DRAFT });
+    $("sheetTitle").textContent = "Edit episode";
+    $("sheetSub").textContent = "Draft saves automatically. Save to apply.";
+    applyForm(DRAFT);
+    showModal();
+  }
+
+  // Share link
   function buildShareLink(token){
     const base = location.origin + location.pathname;
     return `${base}#share=${encodeURIComponent(token)}`;
@@ -1463,7 +1458,7 @@
     try{
       if(navigator.onLine) await deleteDoc(doc(db, "sharedReports", SHARE_TOKEN));
     }catch(e){
-      console.warn("Revoke share link failed (may already be deleted):", e);
+      console.warn("Revoke share link failed:", e);
     }
     SHARE_TOKEN = null;
     await idbDelete("meta", "share_token");
@@ -1518,19 +1513,65 @@
     }
   }
 
-  async function enterShareModeIfHash(){
-    const h = location.hash || "";
-    const m = h.match(/share=([^&]+)/);
-    if(!m) return false;
-    const token = decodeURIComponent(m[1] || "").trim();
-    if(!token) return false;
+  function downloadBlob(content, filename, mime){
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+  function downloadJSON(obj, filename){
+    downloadBlob(JSON.stringify(obj, null, 2), filename, "application/json");
+  }
+  function downloadCSV(rows, filename){
+    const cols = ["dateTimeLabel","severity","duration","activity","typeLocation","symptoms","relief","notes"];
+    const esc = (v)=>{
+      const s = String(v ?? "");
+      if(/[",\n]/.test(s)) return `"${s.replaceAll('"','""')}"`;
+      return s;
+    };
+    const header = cols.join(",");
+    const lines = rows.map(r => cols.map(c => esc(r[c])).join(","));
+    downloadBlob([header, ...lines].join("\n"), filename, "text/csv;charset=utf-8");
+  }
 
-    $("tabbar").style.display = "none";
-    setView("Share");
-    $("syncPill").style.display = "none";
+  async function clearAllData(){
+    if(!confirm("This will delete ALL episodes locally and in Firebase for this device. Continue?")) return;
 
-    await loadSharedReport(token);
-    return true;
+    try{
+      const dbi = await idbOpen();
+      await new Promise((resolve,reject)=>{
+        const tx = dbi.transaction(["episodes","meta"], "readwrite");
+        tx.objectStore("episodes").clear();
+        tx.objectStore("meta").clear();
+        tx.oncomplete = ()=> resolve(true);
+        tx.onerror = ()=> reject(tx.error);
+      });
+    }catch(e){
+      console.warn("Local clear failed", e);
+    }
+
+    if(UID && navigator.onLine){
+      try{
+        if(SHARE_TOKEN) await deleteDoc(doc(db, "sharedReports", SHARE_TOKEN));
+        const snaps = await getDocs(collection(db, "users", UID, "episodes"));
+        for(const d of snaps.docs) await deleteDoc(d.ref);
+      }catch(e){
+        console.warn("Remote clear failed", e);
+      }
+    }
+
+    EPISODES = [];
+    DRAFT = null;
+    EDITING_ID = null;
+    SHARE_TOKEN = null;
+    setSync("Synced");
+    renderAll();
+    setView("Home");
+    alert("All data cleared.");
   }
 
   async function loadSharedReport(token){
@@ -1592,34 +1633,23 @@
     }
   }
 
-  function downloadBlob(content, filename, mime){
-    const blob = new Blob([content], { type: mime });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  }
-  function downloadJSON(obj, filename){
-    downloadBlob(JSON.stringify(obj, null, 2), filename, "application/json");
-  }
-  function downloadCSV(rows, filename){
-    const cols = ["dateTimeLabel","severity","duration","activity","typeLocation","symptoms","relief","notes"];
-    const esc = (v)=>{
-      const s = String(v ?? "");
-      if(/[",\n]/.test(s)) return `"${s.replaceAll('"','""')}"`;
-      return s;
-    };
-    const header = cols.join(",");
-    const lines = rows.map(r => cols.map(c => esc(r[c])).join(","));
-    downloadBlob([header, ...lines].join("\n"), filename, "text/csv;charset=utf-8");
+  async function enterShareModeIfHash(){
+    const h = location.hash || "";
+    const m = h.match(/share=([^&]+)/);
+    if(!m) return false;
+    const token = decodeURIComponent(m[1] || "").trim();
+    if(!token) return false;
+
+    $("tabbar").style.display = "none";
+    setView("Share");
+    $("syncPill").style.display = "none";
+    await loadSharedReport(token);
+    return true;
   }
 
-  function startFirestorePendingListener(){
+  function startMetadataSyncListener(){
     if(!UID) return;
-    if(unsub) unsub();
+    if(unsubMeta) unsubMeta();
 
     const q = query(
       collection(db, "users", UID, "episodes"),
@@ -1627,7 +1657,7 @@
       limit(50)
     );
 
-    unsub = onSnapshot(q, { includeMetadataChanges:true }, (snap)=>{
+    unsubMeta = onSnapshot(q, { includeMetadataChanges:true }, (snap)=>{
       if(!navigator.onLine){
         setSync("Offline (saved locally)");
         return;
@@ -1643,82 +1673,180 @@
     });
   }
 
-  async function clearAllData(){
-    if(!confirm("This will delete ALL episodes locally and in Firebase for this device. Continue?")) return;
-
-    try{
-      const dbi = await idbOpen();
-      await new Promise((resolve,reject)=>{
-        const tx = dbi.transaction(["episodes","meta"], "readwrite");
-        tx.objectStore("episodes").clear();
-        tx.objectStore("meta").clear();
-        tx.oncomplete = ()=> resolve(true);
-        tx.onerror = ()=> reject(tx.error);
-      });
-    }catch(e){
-      console.warn("Local clear failed", e);
-    }
-
-    if(UID && navigator.onLine){
-      try{
-        if(SHARE_TOKEN) await deleteDoc(doc(db, "sharedReports", SHARE_TOKEN));
-        const snaps = await getDocs(collection(db, "users", UID, "episodes"));
-        for(const d of snaps.docs) await deleteDoc(d.ref);
-      }catch(e){
-        console.warn("Remote clear failed", e);
-      }
-    }
-
-    EPISODES = [];
-    DRAFT = null;
-    EDITING_ID = null;
-    SHARE_TOKEN = null;
-    setSync("Synced");
-    renderAll();
-    setView("Home");
-    alert("All data cleared.");
-  }
-
-  // Init chips
-  function initChips(){
-    if(!DRAFT) DRAFT = buildDefaultDraft();
-
-    renderSingleChips(
-      "painTypeChips",
-      ENUMS.painType,
-      ()=>DRAFT.painType,
-      (v)=>{ DRAFT.painType = v; },
-      ()=>{ syncPainTypeOtherUI(); }
-    );
-
-    renderSingleChips("locationChips", ENUMS.location, ()=>DRAFT.location, (v)=>{DRAFT.location=v;});
-    renderSingleChips("activityChips", ENUMS.activity, ()=>DRAFT.onsetActivity, (v)=>{DRAFT.onsetActivity=v;});
-    renderMultiChips("reliefChips", ENUMS.relief, ()=>safeArray(DRAFT.relief), (arr)=>{DRAFT.relief=arr;});
-    renderMultiChips("symptomChips", ENUMS.symptoms, ()=>safeArray(DRAFT.symptoms), (arr)=>{DRAFT.symptoms=arr;});
-
-    renderDurationChips();
-    syncPainTypeOtherUI();
-  }
-
-  // Wire events
-  function wire(){
-    // desktop nav
+  function wireEvents(){
+    // Desktop
     $("navHome").onclick = ()=> setView("Home");
+    $("navLog").onclick = ()=> (DRAFT ? (applyForm(DRAFT), showModal()) : startNewDraftAndOpen());
     $("navHistory").onclick = ()=> setView("History");
     $("navExport").onclick = ()=> setView("Export");
-    $("navLog").onclick = ()=> (DRAFT ? (applyForm(DRAFT), showModal()) : startNewDraftAndOpen());
 
-    // mobile tabs (order: Home -> Log -> History -> Export)
+    // Mobile tabs: Home -> Log -> History -> Export
     $("tabHome").onclick = ()=> setView("Home");
     $("tabLog").onclick = ()=> (DRAFT ? (applyForm(DRAFT), showModal()) : startNewDraftAndOpen());
     $("tabHistory").onclick = ()=> setView("History");
     $("tabExport").onclick = ()=> setView("Export");
 
-    // home
+    // Home CTA
     $("homeLogNow").onclick = ()=> (DRAFT ? (applyForm(DRAFT), showModal()) : startNewDraftAndOpen());
 
-    // resume
+    // Draft resume
     $("resumeDraftBtn").onclick = ()=> { applyForm(DRAFT); showModal(); };
     $("discardDraftBtn").onclick = discardDraft;
 
-    // sheet buttons (Save / Close / Dis
+    // Modal close/discard
+    $("closeSheet").onclick = hideModal;
+    $("closeSheetFooter").onclick = hideModal;
+    $("discardDraftBtnHeader").onclick = discardDraft;
+    $("discardDraftBtnFooter").onclick = discardDraft;
+
+    // Save buttons (both)
+    $("saveSheet").onclick = saveLog;
+    $("saveSheetInline").onclick = saveLog;
+
+    // Form inputs
+    $("ongoing").onchange = ()=>{
+      const ended = $("ongoing").value === "false";
+      $("endAtWrap").style.display = ended ? "block" : "none";
+      onFormChange();
+    };
+
+    $("severity").oninput = ()=> { $("severityVal").textContent = $("severity").value; onFormChange(); };
+    $("startAt").onchange = onFormChange;
+    $("endAt").onchange = onFormChange;
+    $("notes").oninput = ()=> { $("notesCount").textContent = String(($("notes").value||"").length); onFormChange(); };
+
+    $("painTypeOtherText").oninput = ()=>{
+      $("painTypeOtherCount").textContent = String(($("painTypeOtherText").value||"").length);
+      onFormChange();
+    };
+
+    ["v_hr","v_spo2","v_bpsys","v_bpdia"].forEach(id=>{
+      $(id).oninput = onFormChange;
+    });
+
+    // History controls
+    $("historyRange").onchange = renderHistory;
+    $("historySeverity").onchange = renderHistory;
+
+    // Export controls
+    $("exportRange").onchange = renderReport;
+    $("refreshReportBtn").onclick = renderReport;
+    $("printBtn").onclick = ()=> window.print();
+    $("downloadCsvBtn").onclick = ()=>{
+      const rows = computeReportRows($("exportRange").value);
+      downloadCSV(rows, "chest_pain_report.csv");
+    };
+
+    // Share controls
+    $("createShareBtn").onclick = createOrReplaceShareLink;
+    $("copyShareBtn").onclick = copyShareLink;
+    $("revokeShareBtn").onclick = revokeShareLink;
+
+    // Advanced exports
+    $("exportAllJsonBtn").onclick = ()=>{
+      const all = EPISODES.slice().sort((a,b)=> (a.startAt||"").localeCompare(b.startAt||""));
+      downloadJSON({ generatedAt: new Date().toISOString(), episodes: all }, "all_chest_pain_data.json");
+    };
+    $("exportAllCsvBtn").onclick = ()=>{
+      const rows = computeReportRows("all");
+      downloadCSV(rows, "all_chest_pain_data.csv");
+    };
+    $("clearAllBtn").onclick = clearAllData;
+
+    // Share view controls
+    $("sharePrintBtn").onclick = ()=> window.print();
+  }
+
+  async function init(){
+    setSync("Starting…");
+
+    // Share link view (read-only)
+    const isShare = await enterShareModeIfHash();
+    if(isShare) return;
+
+    // Normal mode: sign in anonymously
+    try{
+      await signInAnonymously(auth);
+    }catch(e){
+      console.error("Anonymous sign-in failed:", e);
+      setSync("Sync error (saved locally)");
+    }
+
+    onAuthStateChanged(auth, async (user)=>{
+      UID = user?.uid || null;
+
+      await loadMeta();
+      await loadLocalEpisodes();
+
+      if(!DRAFT) DRAFT = buildDefaultDraft();
+      initChips();
+      applyForm(DRAFT);
+
+      renderAll();
+      updateShareUI();
+      setView("Home");
+
+      if(UID) startMetadataSyncListener();
+
+      // Attempt initial sync for any local episodes (best effort)
+      if(UID && navigator.onLine){
+        setSync("Syncing…");
+        for(const ep of EPISODES){
+          await upsertEpisodeRemote(ep);
+        }
+        setSync(lastWriteError ? "Sync error (saved locally)" : "Synced");
+      } else {
+        setSync("Offline (saved locally)");
+      }
+    });
+
+    window.addEventListener("online", ()=> setSync(UID ? "Synced" : "Starting…"));
+    window.addEventListener("offline", ()=> setSync("Offline (saved locally)"));
+  }
+
+  // Chip initialization relies on DRAFT
+  function wireChipState(){
+    // Whenever a chip selection changes, update DRAFT and UI
+    // (We already call onFormChange from chip handlers)
+  }
+
+  // Hook onFormChange to key user actions too
+  function hookGlobalAutoSave(){
+    // No extra needed; we do it in onFormChange()
+  }
+
+  // Enhance chip handlers: they mutate DRAFT, then onFormChange() runs.
+  function patchChipHandlersAfterInit(){
+    // nothing required
+  }
+
+  // After initChips, DRAFT is set and chips are wired.
+  // We just need to ensure DRAFT exists before initChips runs.
+
+  // Add listeners for chip containers after initChips has rendered chips
+  // (already done by renderSingleChips / renderMultiChips)
+
+  // Ensure save calls happen if user edits while modal is open.
+  // (handled by onFormChange + mirrorDraftToEpisode if editing)
+
+  // Attach additional form change logic: if editing, mirror to local + remote
+  // (already handled in onFormChange -> mirrorDraftToEpisode())
+
+  // Implementation detail: mirrorDraftToEpisode is called only when EDITING_ID != null.
+  // That’s set in openEditEpisode.
+
+  // Overwrite onFormChange to also schedule remote upsert when editing
+  const _onFormChange = onFormChange;
+  onFormChange = async function(){
+    await _onFormChange();
+    if(EDITING_ID){
+      // mirrorDraftToEpisode already schedules remote upsert (debounced)
+    }
+  };
+
+  // Boot
+  wireEvents();
+  init();
+</script>
+</body>
+</html>
