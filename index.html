@@ -371,7 +371,7 @@
       .report-kv{ grid-template-columns: 110px 1fr; }
     }
 
-    /* === Refinement 1: elder-friendly severity slider === */
+    /* === Elder-friendly severity slider === */
     input[type="range"]{
       height: 36px; /* adds touch-friendly vertical area */
       background: transparent;
@@ -379,7 +379,7 @@
       border: 0;
     }
     input[type="range"]::-webkit-slider-runnable-track{
-      height: 12px;                 /* thicker bar */
+      height: 12px;
       border-radius: 999px;
       background: rgba(122,162,255,.22);
       border: 1px solid rgba(122,162,255,.25);
@@ -387,9 +387,9 @@
     input[type="range"]::-webkit-slider-thumb{
       -webkit-appearance: none;
       width: 28px;
-      height: 28px;                 /* bigger grab handle */
+      height: 28px;
       border-radius: 999px;
-      margin-top: -9px;             /* centers thumb on 12px track */
+      margin-top: -9px;
       background: rgba(122,162,255,.95);
       border: 2px solid rgba(255,255,255,.55);
       box-shadow: 0 8px 18px rgba(0,0,0,.35);
@@ -407,6 +407,33 @@
       background: rgba(122,162,255,.95);
       border: 2px solid rgba(255,255,255,.55);
       box-shadow: 0 8px 18px rgba(0,0,0,.35);
+    }
+
+    /* === Elder-friendly readability pass (NEW) === */
+    body{ font-size: 16.5px; }                 /* slightly larger base */
+    .title b{ font-size: 15px; }
+    .title span{ font-size: 13px; }
+    .card p{ font-size: 14px; }
+    .small{ font-size: 13px; }                 /* was 12 */
+
+    label{ font-size: 13px; margin-bottom: 8px; }   /* was 12 / 6px */
+    .help{ font-size: 12.5px; }                      /* was 12 */
+    input, select, textarea{ font-size: 15px; }      /* was 14 */
+
+    .form{ gap: 14px; }                               /* was 12 */
+
+    .chip{
+      font-size: 14px;                                /* was 13 */
+      padding: 10px 12px;                             /* was 8px 10px */
+    }
+    .chips{ gap: 10px; }                              /* was 8 */
+
+    /* Group each pills section into a subtle panel (huge readability win) */
+    .form > div:has(.chips){
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(37,42,54,.85);
+      background: rgba(18,20,27,.22);
     }
 
     /* Print */
@@ -562,7 +589,6 @@
           <div id="shareLinkBox" class="small mono" style="display:none; margin-top:10px; word-break:break-all;"></div>
         </div>
 
-        <!-- === Refinement 2: more breathing room above report header === -->
         <div id="reportArea" style="margin-top:16px;">
           <div class="section-title">
             <h2>Chest pain report</h2>
@@ -703,7 +729,7 @@
           <label>Pain type</label>
           <div id="painTypeChips" class="chips"></div>
 
-          <!-- NEW: helper box for classification -->
+          <!-- Pain type helper panel -->
           <div id="painTypeHelpBox" class="subcard" style="margin-top:10px;">
             <h3 style="margin-bottom:6px;">Pain type guide</h3>
             <div class="muted" id="painTypeHelpText" style="font-size:12px; line-height:1.35;">
@@ -983,8 +1009,6 @@
     return Number.isFinite(n) ? n : null;
   }
 
-  function newId(){ return crypto.randomUUID(); }
-
   function updateChipSelection(container, value, isMulti){
     [...container.children].forEach(el=>{
       const selected = isMulti ? safeArray(value).includes(el.textContent) : (value === el.textContent);
@@ -1068,7 +1092,6 @@
       $("painTypeOtherText").value = DRAFT?.painTypeOtherText || "";
       $("painTypeOtherCount").textContent = String(($("painTypeOtherText").value||"").length);
     }
-    // Update helper always
     setPainTypeHelp(DRAFT?.painType || "Pressure");
   }
 
@@ -1794,7 +1817,7 @@
     $("revokeShareBtn").onclick = revokeShareLink;
 
     $("exportAllJsonBtn").onclick = ()=>{
-      const all = EPISODES.slice().sort((a,b)=> (a.startAt||"").localeCompare(b.startAt||""));
+      const all = EPISODES.slice().sort((a,b)=> (a.startAt||"").localeCompare(a.startAt||""));
       downloadJSON({ generatedAt: new Date().toISOString(), episodes: all }, "all_chest_pain_data.json");
     };
     $("exportAllCsvBtn").onclick = ()=>{
@@ -1849,13 +1872,6 @@
     window.addEventListener("online", ()=> setSync(UID ? "Synced" : "Starting…"));
     window.addEventListener("offline", ()=> setSync("Offline (saved locally)"));
   }
-
-  // This keeps your “edit mirrors to episode” behavior (as before)
-  const _onFormChange = onFormChange;
-  onFormChange = async function(){
-    await _onFormChange();
-    // no extra work needed here; mirrorDraftToEpisode is called in debounced save when EDITING_ID exists
-  };
 
   wireEvents();
   init();
