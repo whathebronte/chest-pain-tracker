@@ -307,8 +307,6 @@
       background: rgba(31,218,138,.12);
     }
 
-    .hr{height:1px;background:rgba(37,42,54,.9);margin:14px 0}
-
     /* Sticky footer action bar inside sheet */
     .sheet-footer{
       position: sticky;
@@ -327,6 +325,30 @@
     }
     .footer-left, .footer-right{display:flex; gap:8px; align-items:center}
 
+    /* Mobile-friendly report (owner + shared): table on desktop, cards on mobile */
+    .report-cards { display:none; margin-top:10px; }
+    .report-card{
+      border:1px solid rgba(37,42,54,.9);
+      background: rgba(18,20,27,.4);
+      border-radius:14px;
+      padding:12px;
+    }
+    .report-card + .report-card{ margin-top:10px; }
+    .report-kv{
+      display:grid;
+      grid-template-columns: 120px 1fr;
+      gap:8px 10px;
+      font-size:13px;
+    }
+    .report-kv div:nth-child(odd){ color: var(--muted); font-weight:900; }
+    .report-kv div:nth-child(even){ color: var(--text); font-weight:800; }
+
+    @media (max-width: 720px){
+      .table{ display:none; }
+      .report-cards{ display:block; }
+      .report-kv{ grid-template-columns: 110px 1fr; }
+    }
+
     /* Print */
     @media print{
       body{background:#fff;color:#111}
@@ -337,6 +359,8 @@
       .table th, .table td{border-bottom:1px solid #ddd}
       .muted, .small{color:#444}
       a{color:#111;text-decoration:none}
+      .report-cards{display:none !important}
+      .table{display:table !important}
     }
   </style>
 </head>
@@ -376,7 +400,6 @@
         <div class="card">
           <div class="section-title">
             <h2>Home</h2>
-            <div class="small">Private by default. Share only via a secret link.</div>
           </div>
 
           <!-- BIG primary CTA -->
@@ -384,9 +407,6 @@
             <button class="primary" id="homeLogNow" style="width:100%; padding:14px 16px; font-size:15px; border-radius:16px;">
               Log Chest Pain
             </button>
-          </div>
-          <div class="small muted" style="margin-top:10px;">
-            Draft saves automatically while you type.
           </div>
 
           <!-- Resume draft -->
@@ -417,11 +437,6 @@
           <div class="subcard">
             <h3>Most common onset activity (30 days)</h3>
             <div class="muted" id="kpiCommonActivity">—</div>
-          </div>
-
-          <div class="subcard">
-            <h3>Device</h3>
-            <div class="small">Device ID (Firebase UID): <span id="uidText" class="mono">—</span></div>
           </div>
         </div>
       </div>
@@ -474,11 +489,9 @@
 
         <div class="subcard no-print">
           <h3>Clinician summary (Print to PDF)</h3>
-          <div class="small muted">Use browser print dialog to save as PDF.</div>
           <div class="row" style="margin-top:10px;">
             <button class="primary" id="printBtn">Print / Save PDF</button>
             <button id="downloadCsvBtn">Download CSV</button>
-            <button id="downloadJsonBtn">Download JSON</button>
           </div>
         </div>
 
@@ -515,12 +528,12 @@
               </thead>
               <tbody id="reportTbody"></tbody>
             </table>
+            <div id="reportCards" class="report-cards"></div>
           </div>
 
           <!-- Advanced tools moved here (since Settings tab removed) -->
           <div class="subcard no-print">
             <h3>Advanced</h3>
-            <div class="small muted">For maintenance only.</div>
             <div class="row" style="margin-top:10px;">
               <button id="exportAllJsonBtn">Download ALL data (JSON)</button>
               <button id="exportAllCsvBtn">Download ALL data (CSV)</button>
@@ -568,6 +581,8 @@
             </thead>
             <tbody id="shareTbody"></tbody>
           </table>
+          <div id="shareCards" class="report-cards"></div>
+
           <div id="shareError" class="banner" style="display:none; border-color: rgba(255,107,107,.4); background: rgba(255,107,107,.10);">
             <b>Could not load shared report</b>
             <div class="small">The link may be invalid or revoked.</div>
@@ -663,21 +678,16 @@
 
         <div style="grid-column: 1 / -1;">
           <label>Notes (optional)</label>
-          <textarea id="notes" maxlength="500" placeholder="Anything else? (short is fine)"></textarea>
+          <textarea id="notes" maxlength="500" placeholder=""></textarea>
+          <div class="help">Anything else?</div>
           <div class="help"><span id="notesCount">0</span>/500</div>
         </div>
 
-        <!-- Save button placed BEFORE Optional vitals -->
+        <!-- BIG Save button placed BEFORE Optional vitals -->
         <div style="grid-column: 1 / -1;" class="no-print">
-          <div class="subcard" style="margin-top:0;">
-            <div class="row" style="justify-content:space-between;">
-              <div>
-                <h3 style="margin:0 0 6px 0;">Save</h3>
-                <div class="small muted">Save the log before optional vitals (recommended).</div>
-              </div>
-              <button id="saveSheetInline" class="primary">Save log</button>
-            </div>
-          </div>
+          <button id="saveSheetInline" class="primary" style="width:100%; padding:16px 16px; font-size:16px; border-radius:16px;">
+            Save log
+          </button>
         </div>
 
         <div style="grid-column: 1 / -1;">
@@ -739,7 +749,7 @@
     durationMins: [1,5,10,20,30,60,120]
   };
 
-  const IDB_NAME = "cpt_db_v3";
+  const IDB_NAME = "cpt_db_v4";
   const IDB_VER = 1;
   const META_DRAFT = "draft";
   const META_SHARE = "share_token";
@@ -771,7 +781,6 @@
       const el = $("view"+v);
       if(el) el.classList.toggle("active", v.toLowerCase() === name.toLowerCase());
     });
-    // tab highlight
     const map = {home:"tabHome",history:"tabHistory",export:"tabExport"};
     Object.values(map).forEach(id=> $(id)?.classList.remove("active"));
     const key = name.toLowerCase();
@@ -1054,7 +1063,6 @@
       updatedAtLocal: new Date().toISOString()
     };
 
-    // If Pain Type isn't Other, ensure other text is cleared
     if(DRAFT.painType !== "Other"){
       DRAFT.painTypeOtherText = "";
     }
@@ -1147,7 +1155,6 @@
       return;
     }
 
-    // If painType is Other, require short description (light validation)
     if(DRAFT.painType === "Other" && !(DRAFT.painTypeOtherText || "").trim()){
       alert("Please describe the pain type (Other).");
       return;
@@ -1382,11 +1389,30 @@
       tbody.appendChild(tr);
     });
 
+    const cards = $("reportCards");
+    cards.innerHTML = "";
+    rows.forEach(r=>{
+      const card = document.createElement("div");
+      card.className = "report-card";
+      card.innerHTML = `
+        <div class="report-kv">
+          <div>Date/Time</div><div>${escapeHtml(r.dateTimeLabel)}</div>
+          <div>Severity</div><div>${escapeHtml(String(r.severity))}</div>
+          <div>Duration</div><div>${escapeHtml(r.duration)}</div>
+          <div>Activity</div><div>${escapeHtml(r.activity)}</div>
+          <div>Type/Location</div><div>${escapeHtml(r.typeLocation)}</div>
+          <div>Symptoms</div><div>${escapeHtml(r.symptoms)}</div>
+          <div>Relief</div><div>${escapeHtml(r.relief)}</div>
+          <div>Notes</div><div>${escapeHtml(r.notes)}</div>
+        </div>
+      `;
+      cards.appendChild(card);
+    });
+
     updateShareUI();
   }
 
   function renderAll(){
-    $("uidText").textContent = UID || "—";
     renderDraftResume();
     renderKPIs();
     renderHistory();
@@ -1495,6 +1521,7 @@
       $("shareSummary").textContent = data.summary || "";
 
       const rows = safeArray(data.rows);
+
       const tbody = $("shareTbody");
       tbody.innerHTML = "";
       rows.forEach(r=>{
@@ -1510,6 +1537,26 @@
           <td>${escapeHtml(r.notes || "")}</td>
         `;
         tbody.appendChild(tr);
+      });
+
+      const cards = $("shareCards");
+      cards.innerHTML = "";
+      rows.forEach(r=>{
+        const card = document.createElement("div");
+        card.className = "report-card";
+        card.innerHTML = `
+          <div class="report-kv">
+            <div>Date/Time</div><div>${escapeHtml(r.dateTimeLabel || "")}</div>
+            <div>Severity</div><div>${escapeHtml(String(r.severity ?? ""))}</div>
+            <div>Duration</div><div>${escapeHtml(r.duration || "")}</div>
+            <div>Activity</div><div>${escapeHtml(r.activity || "")}</div>
+            <div>Type/Location</div><div>${escapeHtml(r.typeLocation || "")}</div>
+            <div>Symptoms</div><div>${escapeHtml(r.symptoms || "")}</div>
+            <div>Relief</div><div>${escapeHtml(r.relief || "")}</div>
+            <div>Notes</div><div>${escapeHtml(r.notes || "")}</div>
+          </div>
+        `;
+        cards.appendChild(card);
       });
 
       $("shareDownloadJsonBtn").onclick = ()=> downloadJSON(rows, "shared_report_rows.json");
@@ -1616,10 +1663,7 @@
       ENUMS.painType,
       ()=>DRAFT.painType,
       (v)=>{ DRAFT.painType = v; },
-      (v)=>{
-        // show/hide Other field
-        syncPainTypeOtherUI();
-      }
+      ()=>{ syncPainTypeOtherUI(); }
     );
 
     renderSingleChips("locationChips", ENUMS.location, ()=>DRAFT.location, (v)=>{DRAFT.location=v;});
@@ -1680,7 +1724,7 @@
 
     ["v_hr","v_spo2","v_bpsys","v_bpdia"].forEach(id=> $(id).oninput = onFormChange);
 
-    // history filters (defaults already set in HTML)
+    // history filters
     $("historyRange").onchange = renderHistory;
     $("historySeverity").onchange = renderHistory;
 
@@ -1688,7 +1732,6 @@
     $("refreshReportBtn").onclick = renderReport;
     $("exportRange").onchange = renderReport;
     $("printBtn").onclick = ()=> window.print();
-    $("downloadJsonBtn").onclick = ()=> downloadJSON(computeReportRows($("exportRange").value), "chest_pain_report_rows.json");
     $("downloadCsvBtn").onclick = ()=> downloadCSV(computeReportRows($("exportRange").value), "chest_pain_report_rows.csv");
 
     // share
@@ -1713,6 +1756,9 @@
     };
     $("clearAllBtn").onclick = clearAllData;
 
+    // share view print
+    $("sharePrintBtn").onclick = ()=> window.print();
+
     // dismiss modal when tapping backdrop
     $("logModal").onclick = (e)=>{ if(e.target === $("logModal")) hideModal(); };
 
@@ -1730,7 +1776,6 @@
     await loadMeta();
     await loadLocalEpisodes();
 
-    if(!DRAFT) DRAFT = null;
     initChips();
     renderAll();
 
@@ -1744,7 +1789,6 @@
     onAuthStateChanged(auth, (user)=>{
       if(user){
         UID = user.uid;
-        $("uidText").textContent = UID;
         startFirestorePendingListener();
         setSync(navigator.onLine ? "Synced" : "Offline (saved locally)");
       } else {
