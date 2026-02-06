@@ -63,7 +63,7 @@
       border-radius:12px;
       cursor:pointer;
       transition:.12s transform, .12s background, .12s border-color;
-      font-weight:700;
+      font-weight:800;
       font-size:13px;
     }
     button:hover{transform: translateY(-1px); border-color: rgba(122,162,255,.45)}
@@ -78,6 +78,7 @@
       background: rgba(255,107,107,.12);
       border-color: rgba(255,107,107,.45);
     }
+
     .pill{
       display:flex; align-items:center; gap:8px;
       padding:7px 10px;
@@ -92,7 +93,7 @@
     .pill.good .dot{background:var(--good)}
     .pill.warn .dot{background:var(--warn)}
     .pill.bad .dot{background:var(--bad)}
-    .pill span{color:var(--text); font-weight:800; font-size:12px}
+    .pill span{color:var(--text); font-weight:900; font-size:12px}
 
     .grid{
       margin-top:16px;
@@ -100,9 +101,7 @@
       grid-template-columns: 1.1fr .9fr;
       gap:14px;
     }
-    @media (max-width: 920px){
-      .grid{grid-template-columns:1fr}
-    }
+    @media (max-width: 920px){ .grid{grid-template-columns:1fr} }
 
     .card{
       background: linear-gradient(180deg, rgba(18,20,27,.92), rgba(15,17,23,.92));
@@ -187,7 +186,7 @@
       text-align:left;
       vertical-align:top;
     }
-    .table th{color:var(--muted); font-size:12px; font-weight:800}
+    .table th{color:var(--muted); font-size:12px; font-weight:900}
 
     /* Bottom tab bar (mobile) */
     .tabbar{
@@ -203,7 +202,7 @@
       max-width:var(--w);
       margin:0 auto;
       display:grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap:8px;
       align-items:center;
     }
@@ -211,7 +210,7 @@
       padding:10px 10px;
       border-radius:14px;
       font-size:12px;
-      font-weight:800;
+      font-weight:900;
       background: rgba(18,20,27,.55);
       border:1px solid rgba(37,42,54,.9);
       color: var(--text);
@@ -248,7 +247,8 @@
       box-shadow: var(--shadow);
       max-height: 88vh;
       overflow:auto;
-      padding: 14px 14px 16px;
+      padding: 14px 14px 12px;
+      position:relative;
     }
     .sheet-header{
       display:flex; gap:10px; align-items:center; justify-content:space-between;
@@ -259,18 +259,22 @@
       border-bottom: 1px solid rgba(37,42,54,.65);
       border-radius: 14px;
       margin-bottom: 10px;
+      z-index:2;
     }
     .sheet-header b{font-size:14px}
-    .sheet-header .sub{font-size:12px;color:var(--muted); font-weight:700}
+    .sheet-header .sub{font-size:12px;color:var(--muted); font-weight:800}
     .sheet-actions{display:flex; gap:8px; align-items:center}
+
     .form{
       display:grid;
       grid-template-columns: 1fr 1fr;
       gap:12px;
       padding: 6px;
+      padding-bottom: 76px; /* room for sticky footer */
     }
     @media (max-width: 820px){ .form{grid-template-columns:1fr} }
-    label{display:block; font-size:12px; color:var(--muted); margin-bottom:6px; font-weight:800}
+
+    label{display:block; font-size:12px; color:var(--muted); margin-bottom:6px; font-weight:900}
     input, select, textarea{
       width:100%;
       border:1px solid rgba(37,42,54,.9);
@@ -295,7 +299,7 @@
       cursor:pointer;
       user-select:none;
       transition:.12s transform, .12s border-color, .12s background;
-      font-weight:800;
+      font-weight:900;
     }
     .chip:hover{transform:translateY(-1px); border-color: rgba(122,162,255,.45)}
     .chip.selected{
@@ -304,6 +308,24 @@
     }
 
     .hr{height:1px;background:rgba(37,42,54,.9);margin:14px 0}
+
+    /* Sticky footer action bar inside sheet */
+    .sheet-footer{
+      position: sticky;
+      bottom: 0;
+      z-index: 3;
+      background: rgba(18,20,27,.96);
+      border-top: 1px solid rgba(37,42,54,.75);
+      backdrop-filter: blur(10px);
+      padding: 10px 10px;
+      border-radius: 14px;
+      margin: 0 6px 6px;
+      display:flex;
+      gap:8px;
+      justify-content:space-between;
+      align-items:center;
+    }
+    .footer-left, .footer-right{display:flex; gap:8px; align-items:center}
 
     /* Print */
     @media print{
@@ -332,12 +354,12 @@
 
       <div class="spacer"></div>
 
+      <!-- Desktop nav: no Settings -->
       <div class="nav-desktop">
         <button id="navHome" class="ghost">Home</button>
         <button id="navHistory">History</button>
-        <button id="navLog" class="primary">Log now</button>
+        <button id="navLog" class="primary">Log</button>
         <button id="navExport">Export</button>
-        <button id="navSettings">Settings</button>
       </div>
 
       <div id="syncPill" class="pill warn" title="Sync status">
@@ -353,16 +375,21 @@
       <div class="grid">
         <div class="card">
           <div class="section-title">
-            <h2>Quick actions</h2>
+            <h2>Home</h2>
             <div class="small">Private by default. Share only via a secret link.</div>
           </div>
 
+          <!-- BIG primary CTA -->
           <div class="row">
-            <button class="primary" id="homeLogNow">Log chest pain now</button>
-            <button id="homeHistory">View history</button>
-            <button id="homeExport">Export</button>
+            <button class="primary" id="homeLogNow" style="width:100%; padding:14px 16px; font-size:15px; border-radius:16px;">
+              Log Chest Pain
+            </button>
+          </div>
+          <div class="small muted" style="margin-top:10px;">
+            Draft saves automatically while you type.
           </div>
 
+          <!-- Resume draft -->
           <div id="resumeDraftBox" class="subcard" style="display:none;">
             <h3>Resume draft</h3>
             <div class="muted" id="draftSummary"></div>
@@ -406,15 +433,16 @@
         <div class="section-title">
           <h2>History</h2>
           <div class="row no-print" style="justify-content:flex-end;">
+            <!-- defaults: 7 days + all severities -->
             <select id="historyRange">
-              <option value="7">Last 7 days</option>
-              <option value="30" selected>Last 30 days</option>
+              <option value="7" selected>Last 7 days</option>
+              <option value="30">Last 30 days</option>
               <option value="90">Last 90 days</option>
               <option value="365">Last 12 months</option>
               <option value="all">All time</option>
             </select>
             <select id="historySeverity">
-              <option value="all">All severities</option>
+              <option value="all" selected>All severities</option>
               <option value="7+">7–10</option>
               <option value="4+">4–10</option>
               <option value="0-3">0–3</option>
@@ -422,7 +450,7 @@
           </div>
         </div>
 
-        <div class="small muted">Tap an episode to edit (opens the log sheet).</div>
+        <div class="small muted">Tap an episode to edit.</div>
         <div id="historyList" class="list"></div>
       </div>
     </div>
@@ -488,31 +516,17 @@
               <tbody id="reportTbody"></tbody>
             </table>
           </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- SETTINGS -->
-    <div id="viewSettings" class="view">
-      <div class="card">
-        <div class="section-title"><h2>Settings</h2></div>
-
-        <div class="subcard">
-          <h3>Data</h3>
-          <div class="row">
-            <button id="exportAllJsonBtn">Download ALL data (JSON)</button>
-            <button id="exportAllCsvBtn">Download ALL data (CSV)</button>
+          <!-- Advanced tools moved here (since Settings tab removed) -->
+          <div class="subcard no-print">
+            <h3>Advanced</h3>
+            <div class="small muted">For maintenance only.</div>
+            <div class="row" style="margin-top:10px;">
+              <button id="exportAllJsonBtn">Download ALL data (JSON)</button>
+              <button id="exportAllCsvBtn">Download ALL data (CSV)</button>
+              <button id="clearAllBtn" class="danger">Clear ALL data (device + Firebase)</button>
+            </div>
           </div>
-          <div class="hr"></div>
-          <div class="row">
-            <button id="clearAllBtn" class="danger">Clear ALL data (device + Firebase)</button>
-          </div>
-          <div class="help">This cannot be undone.</div>
-        </div>
-
-        <div class="subcard">
-          <h3>About</h3>
-          <div class="small muted">This app helps track episodes for review and sharing with medical providers. It does not diagnose or replace medical advice.</div>
         </div>
       </div>
     </div>
@@ -563,14 +577,13 @@
     </div>
   </div>
 
-  <!-- Mobile bottom tab bar -->
+  <!-- Mobile bottom tab bar (4 tabs only) -->
   <div class="tabbar no-print" id="tabbar">
     <div class="tabbar-inner">
       <button class="tabbtn" id="tabHome">Home</button>
       <button class="tabbtn" id="tabHistory">History</button>
       <button class="tabbtn log" id="tabLog">Log</button>
       <button class="tabbtn" id="tabExport">Export</button>
-      <button class="tabbtn" id="tabSettings">Settings</button>
     </div>
   </div>
 
@@ -579,11 +592,13 @@
     <div class="sheet" role="dialog" aria-modal="true" aria-label="Log chest pain">
       <div class="sheet-header">
         <div>
-          <b id="sheetTitle">Log an episode</b><div class="sub" id="sheetSub">Auto-saved locally while you type.</div>
+          <b id="sheetTitle">Log an episode</b>
+          <div class="sub" id="sheetSub">Draft saves automatically while you type.</div>
         </div>
         <div class="sheet-actions">
+          <!-- dynamic buttons: Save / Close / Discard (Save is in footer; header has Close + Discard for quick access) -->
           <button id="closeSheet" class="ghost">Close</button>
-          <button id="saveSheet" class="primary">Save log</button>
+          <button id="discardDraftBtnHeader" class="danger">Discard</button>
         </div>
       </div>
 
@@ -617,6 +632,12 @@
         <div>
           <label>Pain type</label>
           <div id="painTypeChips" class="chips"></div>
+          <!-- OTHER text field -->
+          <div id="painTypeOtherWrap" style="display:none; margin-top:10px;">
+            <label>Describe “Other”</label>
+            <input id="painTypeOtherText" type="text" maxlength="80" placeholder="e.g., stabbing, prickly, etc." />
+            <div class="help"><span id="painTypeOtherCount">0</span>/80</div>
+          </div>
         </div>
 
         <div>
@@ -646,10 +667,23 @@
           <div class="help"><span id="notesCount">0</span>/500</div>
         </div>
 
+        <!-- Save button placed BEFORE Optional vitals -->
+        <div style="grid-column: 1 / -1;" class="no-print">
+          <div class="subcard" style="margin-top:0;">
+            <div class="row" style="justify-content:space-between;">
+              <div>
+                <h3 style="margin:0 0 6px 0;">Save</h3>
+                <div class="small muted">Save the log before optional vitals (recommended).</div>
+              </div>
+              <button id="saveSheetInline" class="primary">Save log</button>
+            </div>
+          </div>
+        </div>
+
         <div style="grid-column: 1 / -1;">
           <div class="subcard">
             <h3>Optional vitals</h3>
-            <div class="form" style="padding:0;">
+            <div class="form" style="padding:0; padding-bottom:0;">
               <div><label>Heart rate (bpm)</label><input id="v_hr" type="number" inputmode="numeric" placeholder="e.g. 92" /></div>
               <div><label>SpO₂ (%)</label><input id="v_spo2" type="number" inputmode="numeric" placeholder="e.g. 98" /></div>
               <div><label>BP systolic</label><input id="v_bpsys" type="number" inputmode="numeric" placeholder="e.g. 130" /></div>
@@ -657,21 +691,17 @@
             </div>
           </div>
         </div>
-
-        <div style="grid-column: 1 / -1;">
-          <div class="subcard">
-            <h3>Draft</h3>
-            <div class="row">
-              <button id="discardDraftBtnSheet" class="danger">Discard draft</button>
-              <div class="small">Draft stays on Home until saved or discarded.</div>
-            </div>
-          </div>
-        </div>
-
       </div>
 
-      <div class="small" style="padding: 0 6px 6px;">
-        <b>How saving works:</b> inputs auto-save locally. “Save log” adds it to History and syncs to Firebase.
+      <!-- Sticky footer: Save / Close / Discard -->
+      <div class="sheet-footer">
+        <div class="footer-left">
+          <button id="discardDraftBtnFooter" class="danger">Discard</button>
+          <button id="closeSheetFooter" class="ghost">Close</button>
+        </div>
+        <div class="footer-right">
+          <button id="saveSheet" class="primary">Save log</button>
+        </div>
       </div>
     </div>
   </div>
@@ -684,7 +714,7 @@
     collection, query, orderBy, limit, getDocs, onSnapshot, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-  // Your Firebase config
+  // Firebase config (public by design for web apps)
   const firebaseConfig = {
     apiKey: "AIzaSyAY9or2wznVWfjmcA7t8zmvP4tij4GV0Vc",
     authDomain: "chest-pain-tracker.firebaseapp.com",
@@ -709,7 +739,7 @@
     durationMins: [1,5,10,20,30,60,120]
   };
 
-  const IDB_NAME = "cpt_db_v2";
+  const IDB_NAME = "cpt_db_v3";
   const IDB_VER = 1;
   const META_DRAFT = "draft";
   const META_SHARE = "share_token";
@@ -737,12 +767,12 @@
   }
 
   function setView(name){
-    ["Home","History","Export","Settings","Share"].forEach(v=>{
+    ["Home","History","Export","Share"].forEach(v=>{
       const el = $("view"+v);
       if(el) el.classList.toggle("active", v.toLowerCase() === name.toLowerCase());
     });
     // tab highlight
-    const map = {home:"tabHome",history:"tabHistory",export:"tabExport",settings:"tabSettings"};
+    const map = {home:"tabHome",history:"tabHistory",export:"tabExport"};
     Object.values(map).forEach(id=> $(id)?.classList.remove("active"));
     const key = name.toLowerCase();
     if(map[key]) $(map[key]).classList.add("active");
@@ -791,7 +821,6 @@
     return m ? `${h}h ${m}m` : `${h}h`;
   }
   function safeArray(a){ return Array.isArray(a) ? a : []; }
-
   function escapeHtml(s){
     return String(s ?? "").replace(/[&<>"']/g, (c)=>({
       "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
@@ -860,7 +889,7 @@
       el.classList.toggle("selected", selected);
     });
   }
-  function renderSingleChips(containerId, options, getter, setter){
+  function renderSingleChips(containerId, options, getter, setter, onAfter){
     const el = $(containerId);
     el.innerHTML = "";
     options.forEach(opt=>{
@@ -870,6 +899,7 @@
       c.onclick = ()=>{
         setter(opt);
         updateChipSelection(el, getter(), false);
+        if(typeof onAfter === "function") onAfter(opt);
         onFormChange();
       };
       el.appendChild(c);
@@ -923,6 +953,7 @@
       endAt: null,
       severity: 5,
       painType: "Pressure",
+      painTypeOtherText: "",
       location: "Center",
       onsetActivity: "Rest",
       relief: [],
@@ -934,7 +965,14 @@
 
   function summarizeDraft(d){
     const when = d?.startAt ? fmtDateTime(new Date(d.startAt)) : "—";
-    return `${when} • ${d?.severity ?? 5}/10 • ${d?.painType ?? "—"} • ${d?.location ?? "—"} • ${d?.onsetActivity ?? "—"}`;
+    const pain = d?.painType === "Other" && d?.painTypeOtherText ? `Other: ${d.painTypeOtherText}` : (d?.painType ?? "—");
+    return `${when} • ${d?.severity ?? 5}/10 • ${pain} • ${d?.location ?? "—"} • ${d?.onsetActivity ?? "—"}`;
+  }
+
+  function numOrNull(v){
+    if(v === "" || v == null) return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
   }
 
   function getFormState(){
@@ -956,8 +994,22 @@
       endAt: end ? end.toISOString() : null,
       severity: Number($("severity").value),
       notes: ($("notes").value || "").trim(),
+      painTypeOtherText: ($("painTypeOtherText").value || "").trim(),
       vitals: vitalsNonEmpty
     };
+  }
+
+  function syncPainTypeOtherUI(){
+    const show = (DRAFT?.painType === "Other");
+    $("painTypeOtherWrap").style.display = show ? "block" : "none";
+    if(!show){
+      $("painTypeOtherText").value = "";
+      $("painTypeOtherCount").textContent = "0";
+      if(DRAFT) DRAFT.painTypeOtherText = "";
+    } else {
+      $("painTypeOtherText").value = DRAFT?.painTypeOtherText || "";
+      $("painTypeOtherCount").textContent = String(($("painTypeOtherText").value||"").length);
+    }
   }
 
   function applyForm(d){
@@ -983,19 +1035,14 @@
     updateChipSelection($("activityChips"), d?.onsetActivity ?? DRAFT.onsetActivity, false);
     updateChipSelection($("reliefChips"), safeArray(d?.relief ?? DRAFT.relief), true);
     updateChipSelection($("symptomChips"), safeArray(d?.symptoms ?? DRAFT.symptoms), true);
-  }
 
-  function numOrNull(v){
-    if(v === "" || v == null) return null;
-    const n = Number(v);
-    return Number.isFinite(n) ? n : null;
+    syncPainTypeOtherUI();
   }
 
   function onFormChange(){
     if(!DRAFT) return;
 
     const s = getFormState();
-    // keep chip selections from DRAFT
     DRAFT = {
       ...DRAFT,
       ...s,
@@ -1007,22 +1054,24 @@
       updatedAtLocal: new Date().toISOString()
     };
 
-    // save locally (debounced)
+    // If Pain Type isn't Other, ensure other text is cleared
+    if(DRAFT.painType !== "Other"){
+      DRAFT.painTypeOtherText = "";
+    }
+
     if(draftTimer) clearTimeout(draftTimer);
     draftTimer = setTimeout(async ()=>{
       await idbPut("meta", { key: META_DRAFT, value: DRAFT });
       setSync(navigator.onLine ? "Saved locally" : "Offline (saved locally)");
       renderDraftResume();
-      // if editing an existing episode, mirror to episode store + schedule sync
+
       if(EDITING_ID){
         await mirrorDraftToEpisode();
       }
-    }, 350);
+    }, 320);
   }
 
-  function newId(){
-    return crypto.randomUUID();
-  }
+  function newId(){ return crypto.randomUUID(); }
 
   async function mirrorDraftToEpisode(){
     const ep = EPISODES.find(e=>e.id===EDITING_ID);
@@ -1035,6 +1084,7 @@
       ongoing: DRAFT.ongoing,
       severity: DRAFT.severity,
       painType: DRAFT.painType,
+      painTypeOtherText: DRAFT.painTypeOtherText || "",
       location: DRAFT.location,
       onsetActivity: DRAFT.onsetActivity,
       relief: safeArray(DRAFT.relief),
@@ -1049,60 +1099,10 @@
     EPISODES = EPISODES.map(x => x.id===updated.id ? updated : x);
     renderAll();
 
-    // schedule remote sync (debounced)
     if(editSyncTimer) clearTimeout(editSyncTimer);
     editSyncTimer = setTimeout(async ()=>{
       await upsertEpisodeRemote(updated);
-    }, 900);
-  }
-
-  async function saveLog(){
-    if(!DRAFT) return;
-
-    if(!DRAFT.startAt){
-      alert("Please set a start time.");
-      return;
-    }
-
-    if(EDITING_ID){
-      // edit mode: final mirror + immediate remote sync
-      await mirrorDraftToEpisode();
-      const ep = EPISODES.find(e=>e.id===EDITING_ID);
-      if(ep) await upsertEpisodeRemote(ep);
-      await clearDraftOnly();
-      hideModal();
-      setView("History");
-      return;
-    }
-
-    // new episode commit
-    const episode = {
-      id: newId(),
-      startAt: DRAFT.startAt,
-      endAt: DRAFT.endAt,
-      ongoing: DRAFT.ongoing,
-      severity: DRAFT.severity,
-      painType: DRAFT.painType,
-      location: DRAFT.location,
-      onsetActivity: DRAFT.onsetActivity,
-      relief: safeArray(DRAFT.relief),
-      symptoms: safeArray(DRAFT.symptoms),
-      notes: DRAFT.notes || "",
-      vitals: DRAFT.vitals,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    await idbPut("episodes", episode);
-    setSync(navigator.onLine ? "Saved locally" : "Offline (saved locally)");
-    await clearDraftOnly();
-    await loadLocalEpisodes();
-    renderAll();
-
-    await upsertEpisodeRemote(episode);
-
-    hideModal();
-    setView("History");
+    }, 850);
   }
 
   async function upsertEpisodeRemote(ep){
@@ -1139,12 +1139,66 @@
     hideModal();
   }
 
+  async function saveLog(){
+    if(!DRAFT) return;
+
+    if(!DRAFT.startAt){
+      alert("Please set a start time.");
+      return;
+    }
+
+    // If painType is Other, require short description (light validation)
+    if(DRAFT.painType === "Other" && !(DRAFT.painTypeOtherText || "").trim()){
+      alert("Please describe the pain type (Other).");
+      return;
+    }
+
+    if(EDITING_ID){
+      await mirrorDraftToEpisode();
+      const ep = EPISODES.find(e=>e.id===EDITING_ID);
+      if(ep) await upsertEpisodeRemote(ep);
+      await clearDraftOnly();
+      hideModal();
+      setView("History");
+      return;
+    }
+
+    const episode = {
+      id: newId(),
+      startAt: DRAFT.startAt,
+      endAt: DRAFT.endAt,
+      ongoing: DRAFT.ongoing,
+      severity: DRAFT.severity,
+      painType: DRAFT.painType,
+      painTypeOtherText: DRAFT.painTypeOtherText || "",
+      location: DRAFT.location,
+      onsetActivity: DRAFT.onsetActivity,
+      relief: safeArray(DRAFT.relief),
+      symptoms: safeArray(DRAFT.symptoms),
+      notes: DRAFT.notes || "",
+      vitals: DRAFT.vitals,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    await idbPut("episodes", episode);
+    setSync(navigator.onLine ? "Saved locally" : "Offline (saved locally)");
+    await clearDraftOnly();
+    await loadLocalEpisodes();
+    renderAll();
+
+    await upsertEpisodeRemote(episode);
+
+    hideModal();
+    setView("History");
+  }
+
   async function startNewDraftAndOpen(){
     EDITING_ID = null;
     DRAFT = buildDefaultDraft();
     await idbPut("meta", { key: META_DRAFT, value: DRAFT });
     $("sheetTitle").textContent = "Log an episode";
-    $("sheetSub").textContent = "Auto-saved locally while you type.";
+    $("sheetSub").textContent = "Draft saves automatically while you type.";
     applyForm(DRAFT);
     showModal();
   }
@@ -1157,11 +1211,12 @@
       ...buildDefaultDraft(),
       ...ep,
       relief: safeArray(ep.relief),
-      symptoms: safeArray(ep.symptoms)
+      symptoms: safeArray(ep.symptoms),
+      painTypeOtherText: ep.painTypeOtherText || ""
     };
     await idbPut("meta", { key: META_DRAFT, value: DRAFT });
     $("sheetTitle").textContent = "Edit episode";
-    $("sheetSub").textContent = "Auto-saved locally. Changes sync shortly.";
+    $("sheetSub").textContent = "Draft saves automatically. Save to apply.";
     applyForm(DRAFT);
     showModal();
   }
@@ -1243,7 +1298,8 @@
       const main = document.createElement("b");
       main.textContent = `${fmtDateTime(new Date(e.startAt))} • ${e.severity}/10 • ${durationLabel(e.startAt, e.endAt, e.ongoing)}`;
       const sub = document.createElement("span");
-      sub.textContent = `${e.painType || "—"} • ${e.location || "—"} • ${e.onsetActivity || "—"}`;
+      const pain = (e.painType === "Other" && e.painTypeOtherText) ? `Other: ${e.painTypeOtherText}` : (e.painType || "—");
+      sub.textContent = `${pain} • ${e.location || "—"} • ${e.onsetActivity || "—"}`;
       left.appendChild(main); left.appendChild(sub);
 
       const right = document.createElement("div");
@@ -1267,12 +1323,13 @@
 
     return items.map(e=>{
       const dt = e.startAt ? new Date(e.startAt) : null;
+      const pain = (e.painType === "Other" && e.painTypeOtherText) ? `Other: ${e.painTypeOtherText}` : (e.painType || "");
       return {
         dateTimeLabel: dt ? fmtDateTime(dt) : "",
         severity: e.severity ?? "",
         duration: durationLabel(e.startAt, e.endAt, e.ongoing),
         activity: e.onsetActivity || "",
-        typeLocation: `${e.painType || ""}${e.location ? " • " + e.location : ""}`.trim(),
+        typeLocation: `${pain}${e.location ? " • " + e.location : ""}`.trim(),
         symptoms: safeArray(e.symptoms).join(", "),
         relief: safeArray(e.relief).join(", "),
         notes: (e.notes || "").trim()
@@ -1372,14 +1429,12 @@
       return;
     }
 
-    // one active: revoke first
     if(SHARE_TOKEN) await revokeShareLink();
 
     const range = $("exportRange").value;
     const rows = computeReportRows(range);
     const summary = computeReportSummary(rows);
 
-    // long token
     const token = crypto.randomUUID().replaceAll("-","") + crypto.randomUUID().replaceAll("-","");
     try{
       await setDoc(doc(db, "sharedReports", token), {
@@ -1419,7 +1474,6 @@
     const token = decodeURIComponent(m[1] || "").trim();
     if(!token) return false;
 
-    // hide normal UI affordances
     $("tabbar").style.display = "none";
     setView("Share");
     $("syncPill").style.display = "none";
@@ -1495,7 +1549,6 @@
     if(!UID) return;
     if(unsub) unsub();
 
-    // simple listener (no composite indexes)
     const q = query(
       collection(db, "users", UID, "episodes"),
       orderBy("startAt", "desc"),
@@ -1521,7 +1574,6 @@
   async function clearAllData(){
     if(!confirm("This will delete ALL episodes locally and in Firebase for this device. Continue?")) return;
 
-    // local clear
     try{
       const dbi = await idbOpen();
       await new Promise((resolve,reject)=>{
@@ -1535,7 +1587,6 @@
       console.warn("Local clear failed", e);
     }
 
-    // remote clear (best effort for small dataset)
     if(UID && navigator.onLine){
       try{
         if(SHARE_TOKEN) await deleteDoc(doc(db, "sharedReports", SHARE_TOKEN));
@@ -1556,34 +1607,60 @@
     alert("All data cleared.");
   }
 
+  // Init chips
+  function initChips(){
+    if(!DRAFT) DRAFT = buildDefaultDraft();
+
+    renderSingleChips(
+      "painTypeChips",
+      ENUMS.painType,
+      ()=>DRAFT.painType,
+      (v)=>{ DRAFT.painType = v; },
+      (v)=>{
+        // show/hide Other field
+        syncPainTypeOtherUI();
+      }
+    );
+
+    renderSingleChips("locationChips", ENUMS.location, ()=>DRAFT.location, (v)=>{DRAFT.location=v;});
+    renderSingleChips("activityChips", ENUMS.activity, ()=>DRAFT.onsetActivity, (v)=>{DRAFT.onsetActivity=v;});
+    renderMultiChips("reliefChips", ENUMS.relief, ()=>safeArray(DRAFT.relief), (arr)=>{DRAFT.relief=arr;});
+    renderMultiChips("symptomChips", ENUMS.symptoms, ()=>safeArray(DRAFT.symptoms), (arr)=>{DRAFT.symptoms=arr;});
+
+    renderDurationChips();
+    syncPainTypeOtherUI();
+  }
+
   // Wire events
   function wire(){
     // desktop nav
     $("navHome").onclick = ()=> setView("Home");
     $("navHistory").onclick = ()=> setView("History");
     $("navExport").onclick = ()=> setView("Export");
-    $("navSettings").onclick = ()=> setView("Settings");
     $("navLog").onclick = ()=> (DRAFT ? (applyForm(DRAFT), showModal()) : startNewDraftAndOpen());
 
     // mobile tabs
     $("tabHome").onclick = ()=> setView("Home");
     $("tabHistory").onclick = ()=> setView("History");
     $("tabExport").onclick = ()=> setView("Export");
-    $("tabSettings").onclick = ()=> setView("Settings");
     $("tabLog").onclick = ()=> (DRAFT ? (applyForm(DRAFT), showModal()) : startNewDraftAndOpen());
 
     // home
     $("homeLogNow").onclick = ()=> (DRAFT ? (applyForm(DRAFT), showModal()) : startNewDraftAndOpen());
-    $("homeHistory").onclick = ()=> setView("History");
-    $("homeExport").onclick = ()=> setView("Export");
 
+    // resume
     $("resumeDraftBtn").onclick = ()=> { applyForm(DRAFT); showModal(); };
     $("discardDraftBtn").onclick = discardDraft;
 
-    // sheet
+    // sheet buttons (Save / Close / Discard)
     $("closeSheet").onclick = ()=> hideModal();
+    $("closeSheetFooter").onclick = ()=> hideModal();
+
     $("saveSheet").onclick = saveLog;
-    $("discardDraftBtnSheet").onclick = discardDraft;
+    $("saveSheetInline").onclick = saveLog;
+
+    $("discardDraftBtnHeader").onclick = discardDraft;
+    $("discardDraftBtnFooter").onclick = discardDraft;
 
     // form inputs
     $("startAt").onchange = onFormChange;
@@ -1595,9 +1672,15 @@
     $("severity").oninput = ()=>{ $("severityVal").textContent = $("severity").value; onFormChange(); };
 
     $("notes").oninput = ()=>{ $("notesCount").textContent = String(($("notes").value||"").length); onFormChange(); };
+
+    $("painTypeOtherText").oninput = ()=>{
+      $("painTypeOtherCount").textContent = String(($("painTypeOtherText").value||"").length);
+      onFormChange();
+    };
+
     ["v_hr","v_spo2","v_bpsys","v_bpdia"].forEach(id=> $(id).oninput = onFormChange);
 
-    // history filters
+    // history filters (defaults already set in HTML)
     $("historyRange").onchange = renderHistory;
     $("historySeverity").onchange = renderHistory;
 
@@ -1613,7 +1696,7 @@
     $("copyShareBtn").onclick = copyShareLink;
     $("revokeShareBtn").onclick = ()=> confirm("Revoke the share link?") && revokeShareLink();
 
-    // settings
+    // advanced
     $("exportAllJsonBtn").onclick = ()=> downloadJSON(EPISODES, "all_episodes.json");
     $("exportAllCsvBtn").onclick = ()=>{
       const rows = EPISODES.map(e=>({
@@ -1621,7 +1704,7 @@
         severity: e.severity ?? "",
         duration: durationLabel(e.startAt, e.endAt, e.ongoing),
         activity: e.onsetActivity || "",
-        typeLocation: `${e.painType || ""}${e.location ? " • " + e.location : ""}`.trim(),
+        typeLocation: `${(e.painType==="Other" && e.painTypeOtherText) ? "Other: "+e.painTypeOtherText : (e.painType||"")}${e.location ? " • " + e.location : ""}`.trim(),
         symptoms: safeArray(e.symptoms).join(", "),
         relief: safeArray(e.relief).join(", "),
         notes: (e.notes || "").trim()
@@ -1630,9 +1713,6 @@
     };
     $("clearAllBtn").onclick = clearAllData;
 
-    // share view print
-    $("sharePrintBtn").onclick = ()=> window.print();
-
     // dismiss modal when tapping backdrop
     $("logModal").onclick = (e)=>{ if(e.target === $("logModal")) hideModal(); };
 
@@ -1640,35 +1720,20 @@
     window.addEventListener("hashchange", ()=> location.reload());
   }
 
-  // Init chips
-  function initChips(){
-    if(!DRAFT) DRAFT = buildDefaultDraft();
-    renderSingleChips("painTypeChips", ENUMS.painType, ()=>DRAFT.painType, v=>{DRAFT.painType=v;});
-    renderSingleChips("locationChips", ENUMS.location, ()=>DRAFT.location, v=>{DRAFT.location=v;});
-    renderSingleChips("activityChips", ENUMS.activity, ()=>DRAFT.onsetActivity, v=>{DRAFT.onsetActivity=v;});
-    renderMultiChips("reliefChips", ENUMS.relief, ()=>safeArray(DRAFT.relief), arr=>{DRAFT.relief=arr;});
-    renderMultiChips("symptomChips", ENUMS.symptoms, ()=>safeArray(DRAFT.symptoms), arr=>{DRAFT.symptoms=arr;});
-    renderDurationChips();
-  }
-
   // Bootstrap
   async function bootstrap(){
     setSync("Starting…");
 
-    // share mode first (public read)
     const isShare = await enterShareModeIfHash();
     if(isShare) return;
 
-    // load local first so UI is usable even if Firebase fails
     await loadMeta();
     await loadLocalEpisodes();
 
-    // ensure draft defaults for chips
     if(!DRAFT) DRAFT = null;
     initChips();
     renderAll();
 
-    // auth (invisible)
     try{
       await signInAnonymously(auth);
     }catch(e){
