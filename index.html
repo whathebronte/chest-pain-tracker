@@ -371,6 +371,44 @@
       .report-kv{ grid-template-columns: 110px 1fr; }
     }
 
+    /* === Refinement 1: elder-friendly severity slider === */
+    input[type="range"]{
+      height: 36px; /* adds touch-friendly vertical area */
+      background: transparent;
+      padding: 0;
+      border: 0;
+    }
+    input[type="range"]::-webkit-slider-runnable-track{
+      height: 12px;                 /* thicker bar */
+      border-radius: 999px;
+      background: rgba(122,162,255,.22);
+      border: 1px solid rgba(122,162,255,.25);
+    }
+    input[type="range"]::-webkit-slider-thumb{
+      -webkit-appearance: none;
+      width: 28px;
+      height: 28px;                 /* bigger grab handle */
+      border-radius: 999px;
+      margin-top: -9px;             /* centers thumb on 12px track */
+      background: rgba(122,162,255,.95);
+      border: 2px solid rgba(255,255,255,.55);
+      box-shadow: 0 8px 18px rgba(0,0,0,.35);
+    }
+    input[type="range"]::-moz-range-track{
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(122,162,255,.22);
+      border: 1px solid rgba(122,162,255,.25);
+    }
+    input[type="range"]::-moz-range-thumb{
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      background: rgba(122,162,255,.95);
+      border: 2px solid rgba(255,255,255,.55);
+      box-shadow: 0 8px 18px rgba(0,0,0,.35);
+    }
+
     /* Print */
     @media print{
       body{background:#fff;color:#111}
@@ -400,7 +438,6 @@
 
       <div class="spacer"></div>
 
-      <!-- Desktop nav -->
       <div class="nav-desktop">
         <button id="navHome" class="ghost">Home</button>
         <button id="navLog" class="primary">Log</button>
@@ -525,7 +562,8 @@
           <div id="shareLinkBox" class="small mono" style="display:none; margin-top:10px; word-break:break-all;"></div>
         </div>
 
-        <div id="reportArea">
+        <!-- === Refinement 2: more breathing room above report header === -->
+        <div id="reportArea" style="margin-top:16px;">
           <div class="section-title">
             <h2>Chest pain report</h2>
             <div class="small">Generated: <span id="reportGeneratedAt">—</span></div>
@@ -664,6 +702,13 @@
         <div>
           <label>Pain type</label>
           <div id="painTypeChips" class="chips"></div>
+
+          <!-- NEW: helper box for classification -->
+          <div id="painTypeHelpBox" class="subcard" style="margin-top:10px;">
+            <h3 style="margin-bottom:6px;">Pain type guide</h3>
+            <div class="muted" id="painTypeHelpText">Tap a pain type to see a quick guide.</div>
+          </div>
+
           <div id="painTypeOtherWrap" style="display:none; margin-top:10px;">
             <label>Describe “Other”</label>
             <input id="painTypeOtherText" type="text" maxlength="80" placeholder="e.g., stabbing, prickly, etc." />
@@ -698,7 +743,6 @@
           <div class="help"><span id="notesCount">0</span>/500</div>
         </div>
 
-        <!-- Big Save button before Optional vitals -->
         <div style="grid-column: 1 / -1;" class="no-print">
           <button id="saveSheetInline" class="primary" style="width:100%; padding:16px 16px; font-size:16px; border-radius:16px;">
             Save log
@@ -718,7 +762,6 @@
         </div>
       </div>
 
-      <!-- Sticky footer: Save / Close / Discard -->
       <div class="sheet-footer">
         <div class="footer-left">
           <button id="discardDraftBtnFooter" class="danger">Discard</button>
@@ -753,6 +796,15 @@
   const db = getFirestore(app);
 
   const $ = (id) => document.getElementById(id);
+
+  const PAIN_TYPE_HELP = {
+    "Pressure": "Feels like heaviness, squeezing, or a weight on the chest. Often described as “tight band” or “elephant sitting on chest.”",
+    "Tightness": "A constricted feeling, like the chest is being held or compressed. May come with shortness of breath.",
+    "Sharp": "Sudden, stabbing, or needle-like pain. Often localized and may worsen with deep breaths or movement.",
+    "Burning": "Hot, acid-like, or “heartburn” sensation. Can relate to reflux, but still log it for patterns.",
+    "Ache": "Dull, sore, or lingering discomfort. Less sudden than sharp pain and may feel like muscle soreness.",
+    "Other": "Use when none of the above fit. Describe the sensation in your own words."
+  };
 
   const ENUMS = {
     painType: ["Pressure","Tightness","Sharp","Burning","Ache","Other"],
@@ -847,7 +899,6 @@
     }[c]));
   }
 
-  // IndexedDB
   function idbOpen(){
     return new Promise((resolve,reject)=>{
       const req = indexedDB.open(IDB_NAME, IDB_VER);
@@ -932,12 +983,17 @@
 
   function newId(){ return crypto.randomUUID(); }
 
-  // Chips
   function updateChipSelection(container, value, isMulti){
     [...container.children].forEach(el=>{
       const selected = isMulti ? safeArray(value).includes(el.textContent) : (value === el.textContent);
       el.classList.toggle("selected", selected);
     });
+  }
+
+  function setPainTypeHelp(painType){
+    const t = $("painTypeHelpText");
+    const msg = PAIN_TYPE_HELP[painType] || "Tap a pain type to see a quick guide.";
+    t.textContent = msg;
   }
 
   function renderSingleChips(containerId, options, getter, setter, onAfter){
@@ -1010,11 +1066,15 @@
       $("painTypeOtherText").value = DRAFT?.painTypeOtherText || "";
       $("painTypeOtherCount").textContent = String(($("painTypeOtherText").value||"").length);
     }
+    // Update helper always
+    setPainTypeHelp(DRAFT?.painType || "Pressure");
   }
 
   function initChips(){
     if(!DRAFT) DRAFT = buildDefaultDraft();
-    renderSingleChips("painTypeChips", ENUMS.painType, ()=>DRAFT.painType, (v)=>{ DRAFT.painType=v; }, ()=>syncPainTypeOtherUI());
+    renderSingleChips("painTypeChips", ENUMS.painType, ()=>DRAFT.painType, (v)=>{ DRAFT.painType=v; }, ()=>{
+      syncPainTypeOtherUI();
+    });
     renderSingleChips("locationChips", ENUMS.location, ()=>DRAFT.location, (v)=>{ DRAFT.location=v; });
     renderSingleChips("activityChips", ENUMS.activity, ()=>DRAFT.onsetActivity, (v)=>{ DRAFT.onsetActivity=v; });
     renderMultiChips("reliefChips", ENUMS.relief, ()=>safeArray(DRAFT.relief), (arr)=>{ DRAFT.relief=arr; });
@@ -1382,7 +1442,7 @@
     }
 
     const episode = {
-      id: newId(),
+      id: crypto.randomUUID(),
       startAt: DRAFT.startAt,
       endAt: DRAFT.endAt,
       ongoing: DRAFT.ongoing,
@@ -1439,7 +1499,6 @@
     showModal();
   }
 
-  // Share link
   function buildShareLink(token){
     const base = location.origin + location.pathname;
     return `${base}#share=${encodeURIComponent(token)}`;
@@ -1674,36 +1733,29 @@
   }
 
   function wireEvents(){
-    // Desktop
     $("navHome").onclick = ()=> setView("Home");
     $("navLog").onclick = ()=> (DRAFT ? (applyForm(DRAFT), showModal()) : startNewDraftAndOpen());
     $("navHistory").onclick = ()=> setView("History");
     $("navExport").onclick = ()=> setView("Export");
 
-    // Mobile tabs: Home -> Log -> History -> Export
     $("tabHome").onclick = ()=> setView("Home");
     $("tabLog").onclick = ()=> (DRAFT ? (applyForm(DRAFT), showModal()) : startNewDraftAndOpen());
     $("tabHistory").onclick = ()=> setView("History");
     $("tabExport").onclick = ()=> setView("Export");
 
-    // Home CTA
     $("homeLogNow").onclick = ()=> (DRAFT ? (applyForm(DRAFT), showModal()) : startNewDraftAndOpen());
 
-    // Draft resume
     $("resumeDraftBtn").onclick = ()=> { applyForm(DRAFT); showModal(); };
     $("discardDraftBtn").onclick = discardDraft;
 
-    // Modal close/discard
     $("closeSheet").onclick = hideModal;
     $("closeSheetFooter").onclick = hideModal;
     $("discardDraftBtnHeader").onclick = discardDraft;
     $("discardDraftBtnFooter").onclick = discardDraft;
 
-    // Save buttons (both)
     $("saveSheet").onclick = saveLog;
     $("saveSheetInline").onclick = saveLog;
 
-    // Form inputs
     $("ongoing").onchange = ()=>{
       const ended = $("ongoing").value === "false";
       $("endAtWrap").style.display = ended ? "block" : "none";
@@ -1724,11 +1776,9 @@
       $(id).oninput = onFormChange;
     });
 
-    // History controls
     $("historyRange").onchange = renderHistory;
     $("historySeverity").onchange = renderHistory;
 
-    // Export controls
     $("exportRange").onchange = renderReport;
     $("refreshReportBtn").onclick = renderReport;
     $("printBtn").onclick = ()=> window.print();
@@ -1737,12 +1787,10 @@
       downloadCSV(rows, "chest_pain_report.csv");
     };
 
-    // Share controls
     $("createShareBtn").onclick = createOrReplaceShareLink;
     $("copyShareBtn").onclick = copyShareLink;
     $("revokeShareBtn").onclick = revokeShareLink;
 
-    // Advanced exports
     $("exportAllJsonBtn").onclick = ()=>{
       const all = EPISODES.slice().sort((a,b)=> (a.startAt||"").localeCompare(b.startAt||""));
       downloadJSON({ generatedAt: new Date().toISOString(), episodes: all }, "all_chest_pain_data.json");
@@ -1753,18 +1801,15 @@
     };
     $("clearAllBtn").onclick = clearAllData;
 
-    // Share view controls
     $("sharePrintBtn").onclick = ()=> window.print();
   }
 
   async function init(){
     setSync("Starting…");
 
-    // Share link view (read-only)
     const isShare = await enterShareModeIfHash();
     if(isShare) return;
 
-    // Normal mode: sign in anonymously
     try{
       await signInAnonymously(auth);
     }catch(e){
@@ -1788,7 +1833,6 @@
 
       if(UID) startMetadataSyncListener();
 
-      // Attempt initial sync for any local episodes (best effort)
       if(UID && navigator.onLine){
         setSync("Syncing…");
         for(const ep of EPISODES){
@@ -1804,47 +1848,13 @@
     window.addEventListener("offline", ()=> setSync("Offline (saved locally)"));
   }
 
-  // Chip initialization relies on DRAFT
-  function wireChipState(){
-    // Whenever a chip selection changes, update DRAFT and UI
-    // (We already call onFormChange from chip handlers)
-  }
-
-  // Hook onFormChange to key user actions too
-  function hookGlobalAutoSave(){
-    // No extra needed; we do it in onFormChange()
-  }
-
-  // Enhance chip handlers: they mutate DRAFT, then onFormChange() runs.
-  function patchChipHandlersAfterInit(){
-    // nothing required
-  }
-
-  // After initChips, DRAFT is set and chips are wired.
-  // We just need to ensure DRAFT exists before initChips runs.
-
-  // Add listeners for chip containers after initChips has rendered chips
-  // (already done by renderSingleChips / renderMultiChips)
-
-  // Ensure save calls happen if user edits while modal is open.
-  // (handled by onFormChange + mirrorDraftToEpisode if editing)
-
-  // Attach additional form change logic: if editing, mirror to local + remote
-  // (already handled in onFormChange -> mirrorDraftToEpisode())
-
-  // Implementation detail: mirrorDraftToEpisode is called only when EDITING_ID != null.
-  // That’s set in openEditEpisode.
-
-  // Overwrite onFormChange to also schedule remote upsert when editing
+  // This keeps your “edit mirrors to episode” behavior (as before)
   const _onFormChange = onFormChange;
   onFormChange = async function(){
     await _onFormChange();
-    if(EDITING_ID){
-      // mirrorDraftToEpisode already schedules remote upsert (debounced)
-    }
+    // no extra work needed here; mirrorDraftToEpisode is called in debounced save when EDITING_ID exists
   };
 
-  // Boot
   wireEvents();
   init();
 </script>
