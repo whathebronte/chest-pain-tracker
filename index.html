@@ -110,9 +110,33 @@
       box-shadow: var(--shadow);
       padding: var(--pad2);
     }
-    .section-title{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px}
+
+    .section-title{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
     .section-title h2{margin:0; font-size:16px}
     .card p{margin:0; color:var(--muted)}
+
+    /* Mobile header alignment fix (not just Export) */
+    @media (max-width: 560px){
+      .section-title{
+        flex-direction:column;
+        align-items:flex-start;
+        gap:8px;
+      }
+      .section-title .row{
+        width:100%;
+        justify-content:space-between !important;
+      }
+      .section-title .row > *{
+        flex:1 1 auto;
+      }
+      .section-title select{min-width:0}
+    }
 
     .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
     .muted{color:var(--muted)}
@@ -592,12 +616,12 @@
     </div>
   </div>
 
-  <!-- Mobile bottom tab bar (4 tabs only) -->
+  <!-- Mobile bottom tab bar (order: Home -> Log -> History -> Export) -->
   <div class="tabbar no-print" id="tabbar">
     <div class="tabbar-inner">
       <button class="tabbtn" id="tabHome">Home</button>
-      <button class="tabbtn" id="tabHistory">History</button>
       <button class="tabbtn log" id="tabLog">Log</button>
+      <button class="tabbtn" id="tabHistory">History</button>
       <button class="tabbtn" id="tabExport">Export</button>
     </div>
   </div>
@@ -679,7 +703,6 @@
         <div style="grid-column: 1 / -1;">
           <label>Notes (optional)</label>
           <textarea id="notes" maxlength="500" placeholder=""></textarea>
-          <div class="help">Anything else?</div>
           <div class="help"><span id="notesCount">0</span>/500</div>
         </div>
 
@@ -781,10 +804,12 @@
       const el = $("view"+v);
       if(el) el.classList.toggle("active", v.toLowerCase() === name.toLowerCase());
     });
-    const map = {home:"tabHome",history:"tabHistory",export:"tabExport"};
-    Object.values(map).forEach(id=> $(id)?.classList.remove("active"));
+    Object.values({home:"tabHome",history:"tabHistory",export:"tabExport"}).forEach(id=> $(id)?.classList.remove("active"));
     const key = name.toLowerCase();
-    if(map[key]) $(map[key]).classList.add("active");
+    if(key === "home") $("tabHome")?.classList.add("active");
+    if(key === "history") $("tabHistory")?.classList.add("active");
+    if(key === "export") $("tabExport")?.classList.add("active");
+    // NOTE: Log is a modal; we don't set an "active" state for it.
   }
 
   function showModal(){
@@ -1069,7 +1094,7 @@
 
     if(draftTimer) clearTimeout(draftTimer);
     draftTimer = setTimeout(async ()=>{
-      await idbPut("meta", { key: META_DRAFT, value: DRAFT });
+      await idbPut("meta", { key: "draft", value: DRAFT });
       setSync(navigator.onLine ? "Saved locally" : "Offline (saved locally)");
       renderDraftResume();
 
@@ -1138,7 +1163,7 @@
   async function clearDraftOnly(){
     DRAFT = null;
     EDITING_ID = null;
-    await idbDelete("meta", META_DRAFT);
+    await idbDelete("meta", "draft");
     renderDraftResume();
   }
 
@@ -1203,7 +1228,7 @@
   async function startNewDraftAndOpen(){
     EDITING_ID = null;
     DRAFT = buildDefaultDraft();
-    await idbPut("meta", { key: META_DRAFT, value: DRAFT });
+    await idbPut("meta", { key: "draft", value: DRAFT });
     $("sheetTitle").textContent = "Log an episode";
     $("sheetSub").textContent = "Draft saves automatically while you type.";
     applyForm(DRAFT);
@@ -1221,7 +1246,7 @@
       symptoms: safeArray(ep.symptoms),
       painTypeOtherText: ep.painTypeOtherText || ""
     };
-    await idbPut("meta", { key: META_DRAFT, value: DRAFT });
+    await idbPut("meta", { key: "draft", value: DRAFT });
     $("sheetTitle").textContent = "Edit episode";
     $("sheetSub").textContent = "Draft saves automatically. Save to apply.";
     applyForm(DRAFT);
@@ -1239,10 +1264,10 @@
   }
 
   async function loadMeta(){
-    const d = await idbGet("meta", META_DRAFT);
+    const d = await idbGet("meta", "draft");
     DRAFT = d?.value || null;
 
-    const s = await idbGet("meta", META_SHARE);
+    const s = await idbGet("meta", "share_token");
     SHARE_TOKEN = s?.value || null;
   }
 
@@ -1441,7 +1466,7 @@
       console.warn("Revoke share link failed (may already be deleted):", e);
     }
     SHARE_TOKEN = null;
-    await idbDelete("meta", META_SHARE);
+    await idbDelete("meta", "share_token");
     updateShareUI();
   }
 
@@ -1472,7 +1497,7 @@
       }, { merge:false });
 
       SHARE_TOKEN = token;
-      await idbPut("meta", { key: META_SHARE, value: SHARE_TOKEN });
+      await idbPut("meta", { key: "share_token", value: SHARE_TOKEN });
       updateShareUI();
       setSync("Synced");
     }catch(e){
@@ -1683,11 +1708,11 @@
     $("navExport").onclick = ()=> setView("Export");
     $("navLog").onclick = ()=> (DRAFT ? (applyForm(DRAFT), showModal()) : startNewDraftAndOpen());
 
-    // mobile tabs
+    // mobile tabs (order: Home -> Log -> History -> Export)
     $("tabHome").onclick = ()=> setView("Home");
+    $("tabLog").onclick = ()=> (DRAFT ? (applyForm(DRAFT), showModal()) : startNewDraftAndOpen());
     $("tabHistory").onclick = ()=> setView("History");
     $("tabExport").onclick = ()=> setView("Export");
-    $("tabLog").onclick = ()=> (DRAFT ? (applyForm(DRAFT), showModal()) : startNewDraftAndOpen());
 
     // home
     $("homeLogNow").onclick = ()=> (DRAFT ? (applyForm(DRAFT), showModal()) : startNewDraftAndOpen());
@@ -1696,113 +1721,4 @@
     $("resumeDraftBtn").onclick = ()=> { applyForm(DRAFT); showModal(); };
     $("discardDraftBtn").onclick = discardDraft;
 
-    // sheet buttons (Save / Close / Discard)
-    $("closeSheet").onclick = ()=> hideModal();
-    $("closeSheetFooter").onclick = ()=> hideModal();
-
-    $("saveSheet").onclick = saveLog;
-    $("saveSheetInline").onclick = saveLog;
-
-    $("discardDraftBtnHeader").onclick = discardDraft;
-    $("discardDraftBtnFooter").onclick = discardDraft;
-
-    // form inputs
-    $("startAt").onchange = onFormChange;
-    $("ongoing").onchange = ()=>{
-      $("endAtWrap").style.display = ($("ongoing").value==="false") ? "block" : "none";
-      onFormChange();
-    };
-    $("endAt").onchange = onFormChange;
-    $("severity").oninput = ()=>{ $("severityVal").textContent = $("severity").value; onFormChange(); };
-
-    $("notes").oninput = ()=>{ $("notesCount").textContent = String(($("notes").value||"").length); onFormChange(); };
-
-    $("painTypeOtherText").oninput = ()=>{
-      $("painTypeOtherCount").textContent = String(($("painTypeOtherText").value||"").length);
-      onFormChange();
-    };
-
-    ["v_hr","v_spo2","v_bpsys","v_bpdia"].forEach(id=> $(id).oninput = onFormChange);
-
-    // history filters
-    $("historyRange").onchange = renderHistory;
-    $("historySeverity").onchange = renderHistory;
-
-    // export
-    $("refreshReportBtn").onclick = renderReport;
-    $("exportRange").onchange = renderReport;
-    $("printBtn").onclick = ()=> window.print();
-    $("downloadCsvBtn").onclick = ()=> downloadCSV(computeReportRows($("exportRange").value), "chest_pain_report_rows.csv");
-
-    // share
-    $("createShareBtn").onclick = createOrReplaceShareLink;
-    $("copyShareBtn").onclick = copyShareLink;
-    $("revokeShareBtn").onclick = ()=> confirm("Revoke the share link?") && revokeShareLink();
-
-    // advanced
-    $("exportAllJsonBtn").onclick = ()=> downloadJSON(EPISODES, "all_episodes.json");
-    $("exportAllCsvBtn").onclick = ()=>{
-      const rows = EPISODES.map(e=>({
-        dateTimeLabel: e.startAt ? fmtDateTime(new Date(e.startAt)) : "",
-        severity: e.severity ?? "",
-        duration: durationLabel(e.startAt, e.endAt, e.ongoing),
-        activity: e.onsetActivity || "",
-        typeLocation: `${(e.painType==="Other" && e.painTypeOtherText) ? "Other: "+e.painTypeOtherText : (e.painType||"")}${e.location ? " • " + e.location : ""}`.trim(),
-        symptoms: safeArray(e.symptoms).join(", "),
-        relief: safeArray(e.relief).join(", "),
-        notes: (e.notes || "").trim()
-      }));
-      downloadCSV(rows, "all_episodes.csv");
-    };
-    $("clearAllBtn").onclick = clearAllData;
-
-    // share view print
-    $("sharePrintBtn").onclick = ()=> window.print();
-
-    // dismiss modal when tapping backdrop
-    $("logModal").onclick = (e)=>{ if(e.target === $("logModal")) hideModal(); };
-
-    // hash changes
-    window.addEventListener("hashchange", ()=> location.reload());
-  }
-
-  // Bootstrap
-  async function bootstrap(){
-    setSync("Starting…");
-
-    const isShare = await enterShareModeIfHash();
-    if(isShare) return;
-
-    await loadMeta();
-    await loadLocalEpisodes();
-
-    initChips();
-    renderAll();
-
-    try{
-      await signInAnonymously(auth);
-    }catch(e){
-      console.error("Anonymous auth failed:", e);
-      setSync("Sync error (saved locally)");
-    }
-
-    onAuthStateChanged(auth, (user)=>{
-      if(user){
-        UID = user.uid;
-        startFirestorePendingListener();
-        setSync(navigator.onLine ? "Synced" : "Offline (saved locally)");
-      } else {
-        setSync("Offline (saved locally)");
-      }
-    });
-
-    window.addEventListener("online", ()=> setSync("Synced"));
-    window.addEventListener("offline", ()=> setSync("Offline (saved locally)"));
-  }
-
-  // Start
-  wire();
-  await bootstrap();
-</script>
-</body>
-</html>
+    // sheet buttons (Save / Close / Dis
