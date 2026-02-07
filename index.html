@@ -5,11 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Chest Pain Tracker</title>
   <meta name="description" content="Track chest pain episodes, export summaries, and share a read-only report link." />
+
   <style>
     :root{
       --bg:#0b0c10;
-      --card:#12141b;
-      --card2:#0f1117;
       --text:#f3f4f6;
       --muted:#a7acb8;
       --line:#252a36;
@@ -41,7 +40,7 @@
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
       line-height:1.35;
     }
-    a{color:inherit}
+
     .wrap{max-width:var(--w); margin:0 auto; padding:18px 14px 110px;}
     .topbar{
       position:sticky; top:0; z-index:20;
@@ -73,6 +72,7 @@
       transition:.12s transform, .12s background, .12s border-color;
       font-weight:900;
       font-size:14px;
+      white-space:nowrap;
     }
     button:hover{transform: translateY(-1px); border-color: rgba(122,162,255,.45)}
     button:active{transform: translateY(0px)}
@@ -85,6 +85,11 @@
     button.danger{
       background: rgba(255,107,107,.12);
       border-color: rgba(255,107,107,.45);
+    }
+    button:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+      transform:none !important;
     }
 
     .pill{
@@ -127,21 +132,6 @@
       margin-bottom:10px;
     }
     .section-title h2{margin:0; font-size:var(--h2)}
-    .card p{margin:0; color:var(--muted)}
-
-    @media (max-width: 560px){
-      .section-title{
-        flex-direction:column;
-        align-items:flex-start;
-        gap:8px;
-      }
-      .section-title .row{
-        width:100%;
-        justify-content:space-between !important;
-      }
-      .section-title select{min-width:0}
-    }
-
     .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
     .muted{color:var(--muted)}
     .small{font-size:13px;color:var(--muted)}
@@ -194,13 +184,7 @@
       display:flex;
       justify-content:space-between;
       gap:12px;
-      cursor:pointer;
-      transition: .12s border-color, .12s transform;
     }
-    .item:hover{transform:translateY(-1px); border-color: rgba(122,162,255,.45)}
-    .item b{display:block; font-size:14px}
-    .item span{display:block; font-size:13px; color:var(--muted); font-weight:800}
-    .item .right{text-align:right; min-width:90px; display:flex; flex-direction:column; justify-content:center;}
 
     .table{
       width:100%;
@@ -255,6 +239,29 @@
       .wrap{padding-bottom: 130px;}
     }
 
+    /* --- HOME Unique link: keep buttons on one line on mobile --- */
+    .uid-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:nowrap;      /* critical: no wrapping */
+      width:100%;
+      margin-top:12px;
+    }
+    .uid-actions button{
+      flex: 1 1 0;           /* allow shrink */
+      min-width: 0;          /* allow shrink */
+      padding: 9px 10px;     /* smaller */
+      font-size: 13px;       /* smaller */
+      border-radius: 13px;
+    }
+    @media (max-width: 390px){
+      .uid-actions button{
+        padding: 8px 8px;
+        font-size: 12px;
+      }
+    }
+
+    /* Modal */
     .modal-backdrop{
       position:fixed; inset:0;
       background: rgba(0,0,0,.55);
@@ -358,29 +365,6 @@
     }
     .footer-left, .footer-right{display:flex; gap:8px; align-items:center}
 
-    .report-cards { display:none; margin-top:10px; }
-    .report-card{
-      border:1px solid rgba(37,42,54,.9);
-      background: rgba(18,20,27,.4);
-      border-radius:14px;
-      padding:12px;
-    }
-    .report-card + .report-card{ margin-top:10px; }
-    .report-kv{
-      display:grid;
-      grid-template-columns: 120px 1fr;
-      gap:8px 10px;
-      font-size:14px;
-    }
-    .report-kv div:nth-child(odd){ color: var(--muted); font-weight:900; }
-    .report-kv div:nth-child(even){ color: var(--text); font-weight:900; }
-
-    @media (max-width: 720px){
-      .table{ display:none; }
-      .report-cards{ display:block; }
-      .report-kv{ grid-template-columns: 110px 1fr; }
-    }
-
     input[type="range"]{
       height: 38px;
       background: transparent;
@@ -426,9 +410,6 @@
       .subcard{border:1px solid #ddd;background:#fff}
       .table th, .table td{border-bottom:1px solid #ddd}
       .muted, .small{color:#444}
-      a{color:#111;text-decoration:none}
-      .report-cards{display:none !important}
-      .table{display:table !important}
     }
   </style>
 </head>
@@ -504,16 +485,15 @@
             <div class="muted" id="kpiCommonActivity">—</div>
           </div>
 
-          <!-- Unique link moved to bottom and simplified -->
+          <!-- Unique link at bottom -->
           <div class="subcard no-print" style="margin-top:16px;">
             <div style="font-weight:900;">Your unique link</div>
             <div class="small muted" style="margin-top:2px;">ID: <span id="uidShort2" class="mono">—</span></div>
 
-            <!-- CHANGED: Copy link moved to same plane as Load existing and Show link -->
-            <div class="row" style="margin-top:12px;">
-              <button id="copyUidLinkBtn2" class="primary" style="flex:1;">Copy link</button>
-              <button id="loadUidBtn" class="ghost" style="flex:1;">Load existing</button>
-              <button id="toggleUidLink" class="ghost" style="flex:1;">Show link</button>
+            <div class="uid-actions">
+              <button id="copyUidLinkBtn2" class="primary">Copy link</button>
+              <button id="loadUidBtn" class="ghost">Load existing</button>
+              <button id="toggleUidLink" class="ghost">Show link</button>
             </div>
 
             <div id="uidLinkBoxWrap" style="display:none; margin-top:10px;">
@@ -546,7 +526,7 @@
           </div>
         </div>
 
-        <div class="small muted">Tap an episode to edit.</div>
+        <div class="small muted">Most recent first.</div>
         <div id="historyList" class="list"></div>
       </div>
     </div>
@@ -609,7 +589,6 @@
               </thead>
               <tbody id="reportTbody"></tbody>
             </table>
-            <div id="reportCards" class="report-cards"></div>
           </div>
 
           <div class="subcard no-print">
@@ -659,7 +638,6 @@
             </thead>
             <tbody id="shareTbody"></tbody>
           </table>
-          <div id="shareCards" class="report-cards"></div>
 
           <div id="shareError" class="banner" style="display:none; border-color: rgba(255,107,107,.4); background: rgba(255,107,107,.10);">
             <b>Could not load shared report</b>
@@ -801,10 +779,13 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
   import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
   import {
-    getFirestore, doc, setDoc, getDoc, deleteDoc,
-    collection, query, orderBy, getDocs, onSnapshot, serverTimestamp
+    getFirestore,
+    doc, setDoc, getDoc, deleteDoc,
+    collection, query, orderBy, getDocs, onSnapshot,
+    serverTimestamp
   } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
+  // ---- Firebase config (client config is expected to be public) ----
   const firebaseConfig = {
     apiKey: "AIzaSyAY9or2wznVWfjmcA7t8zmvP4tij4GV0Vc",
     authDomain: "chest-pain-tracker.firebaseapp.com",
@@ -814,11 +795,38 @@
     appId: "1:695419264328:web:279b5091674d4497c1a77d"
   };
 
+  // ---- App state ----
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
 
   const $ = (id) => document.getElementById(id);
+
+  // SAFE binding: prevents one missing element from crashing the entire app
+  function bindClick(id, handler){
+    const el = $(id);
+    if(!el){
+      console.warn("Missing element for bindClick:", id);
+      return;
+    }
+    el.addEventListener("click", (e)=>handler(e));
+  }
+  function bindChange(id, handler){
+    const el = $(id);
+    if(!el){
+      console.warn("Missing element for bindChange:", id);
+      return;
+    }
+    el.addEventListener("change", (e)=>handler(e));
+  }
+  function bindInput(id, handler){
+    const el = $(id);
+    if(!el){
+      console.warn("Missing element for bindInput:", id);
+      return;
+    }
+    el.addEventListener("input", (e)=>handler(e));
+  }
 
   const PAIN_TYPE_HELP = {
     "Pressure": "Heaviness, squeezing, or a weight on the chest. Often described as a “tight band.”",
@@ -841,44 +849,61 @@
   let VAULT_ID = null;
   let EPISODES = [];
   let DRAFT = null;
-  let EDITING_ID = null;
   let SHARE_TOKEN = null;
 
   let draftTimer = null;
   let unsubEpisodes = null;
   let unsubDraft = null;
-  let unsubShareMeta = null;
+  let unsubShare = null;
 
+  const state = {
+    painType: "Pressure",
+    location: "Center",
+    activity: "Rest",
+    relief: "None",
+    symptoms: ["None"],
+    durationMins: null,
+  };
+
+  // ---- Sync status pill ----
   function setSync(status){
     const pill = $("syncPill");
     const text = $("syncText");
+    if(!pill || !text) return;
     pill.classList.remove("good","warn","bad");
     let cls = "warn";
     if(status === "Synced") cls = "good";
-    if(status.startsWith("Sync error")) cls = "bad";
+    if(String(status).startsWith("Sync error")) cls = "bad";
     pill.classList.add(cls);
     text.textContent = status;
   }
 
+  // ---- Routing / views ----
   function setView(name){
     ["Home","History","Export","Share"].forEach(v=>{
       const el = $("view"+v);
       if(el) el.classList.toggle("active", v.toLowerCase() === name.toLowerCase());
     });
-    $("tabHome")?.classList.toggle("active", name==="Home");
-    $("tabHistory")?.classList.toggle("active", name==="History");
-    $("tabExport")?.classList.toggle("active", name==="Export");
+    const tabHome = $("tabHome"), tabHistory = $("tabHistory"), tabExport = $("tabExport");
+    if(tabHome) tabHome.classList.toggle("active", name==="Home");
+    if(tabHistory) tabHistory.classList.toggle("active", name==="History");
+    if(tabExport) tabExport.classList.toggle("active", name==="Export");
   }
 
   function showModal(){
-    $("logModal").classList.add("show");
+    const m = $("logModal");
+    if(!m) return;
+    m.classList.add("show");
     document.body.style.overflow = "hidden";
   }
   function hideModal(){
-    $("logModal").classList.remove("show");
+    const m = $("logModal");
+    if(!m) return;
+    m.classList.remove("show");
     document.body.style.overflow = "";
   }
 
+  // ---- UID / vault id ----
   function longRandomId(){
     return (crypto.randomUUID().replaceAll("-","") + crypto.randomUUID().replaceAll("-",""));
   }
@@ -914,8 +939,8 @@
 
   function applyVaultToUI(){
     const short = VAULT_ID ? VAULT_ID.slice(0, 8) : "—";
-    $("uidShort2").textContent = short;
-    $("uidLinkBox").textContent = VAULT_ID ? currentVaultLink() : "—";
+    if($("uidShort2")) $("uidShort2").textContent = short;
+    if($("uidLinkBox")) $("uidLinkBox").textContent = VAULT_ID ? currentVaultLink() : "—";
   }
 
   async function ensureVaultId(){
@@ -980,12 +1005,9 @@
     alert("Loaded. If data exists for that ID, it will appear.");
   }
 
+  // ---- Date helpers ----
   function nowLocal(){
     const d = new Date();
-    const pad = (n)=>String(n).padStart(2,"0");
-    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  }
-  function toDTLocal(d){
     const pad = (n)=>String(n).padStart(2,"0");
     return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
@@ -1024,13 +1046,11 @@
     }
     return "—";
   }
-
   function daysAgoCutoff(days){
     const d = new Date();
     d.setDate(d.getDate() - days);
     return d;
   }
-
   function filterByRange(list, range){
     if(range === "all") return [...list];
     const days = Number(range);
@@ -1040,7 +1060,6 @@
       return t >= cutoff;
     });
   }
-
   function filterBySeverity(list, sev){
     if(sev === "all") return [...list];
     if(sev === "7+") return list.filter(e => Number(e.severity||0) >= 7);
@@ -1049,8 +1068,15 @@
     return [...list];
   }
 
+  // ---- Firestore refs ----
+  function episodeColl(){ return collection(db, "vaults", VAULT_ID, "episodes"); }
+  function draftDoc(){ return doc(db, "vaults", VAULT_ID, "draft", "current"); }
+  function shareDoc(){ return doc(db, "vaults", VAULT_ID, "share", "active"); }
+
+  // ---- Chips builder ----
   function buildChips(containerId, items, {multi=false, onChange, getSelected}){
     const wrap = $(containerId);
+    if(!wrap) return;
     wrap.innerHTML = "";
     items.forEach(label=>{
       const div = document.createElement("div");
@@ -1063,8 +1089,7 @@
         return sel === label;
       };
 
-      const render = ()=> div.classList.toggle("selected", isSelected());
-      render();
+      div.classList.toggle("selected", isSelected());
 
       div.addEventListener("click", ()=>{
         const cur = getSelected();
@@ -1084,63 +1109,24 @@
 
         if(containerId === "painTypeChips"){
           const help = PAIN_TYPE_HELP[label] || "Tap a pain type to see a quick guide.";
-          $("painTypeHelpText").textContent = help;
+          if($("painTypeHelpText")) $("painTypeHelpText").textContent = help;
 
           const showOther = (label === "Other");
-          $("painTypeOtherWrap").style.display = showOther ? "block" : "none";
-          if(!showOther) $("painTypeOtherText").value = "";
-          $("painTypeOtherCount").textContent = "0";
+          if($("painTypeOtherWrap")) $("painTypeOtherWrap").style.display = showOther ? "block" : "none";
+          if(!showOther && $("painTypeOtherText")) $("painTypeOtherText").value = "";
+          if($("painTypeOtherCount")) $("painTypeOtherCount").textContent = "0";
         }
 
-        [...wrap.children].forEach(ch => ch.classList.toggle("selected", (()=> {
+        [...wrap.children].forEach(ch => {
           const sel = getSelected();
-          if(multi) return Array.isArray(sel) && sel.includes(ch.textContent);
-          return sel === ch.textContent;
-        })()));
+          const ok = multi ? (Array.isArray(sel) && sel.includes(ch.textContent)) : (sel === ch.textContent);
+          ch.classList.toggle("selected", ok);
+        });
       });
 
       wrap.appendChild(div);
     });
   }
-
-  function resetFormToDefaults(){
-    $("startAt").value = nowLocal();
-    $("ongoing").value = "true";
-    $("endAtWrap").style.display = "none";
-    $("endAt").value = "";
-    $("severity").value = "5";
-    $("severityVal").textContent = "5";
-    $("notes").value = "";
-    $("notesCount").textContent = "0";
-
-    $("v_hr").value = "";
-    $("v_spo2").value = "";
-    $("v_bpsys").value = "";
-    $("v_bpdia").value = "";
-
-    state.painType = "Pressure";
-    state.location = "Center";
-    state.activity = "Rest";
-    state.relief = "None";
-    state.symptoms = ["None"];
-    state.durationMins = null;
-
-    $("painTypeHelpText").textContent = PAIN_TYPE_HELP[state.painType];
-    $("painTypeOtherWrap").style.display = "none";
-    $("painTypeOtherText").value = "";
-    $("painTypeOtherCount").textContent = "0";
-
-    renderAllChips();
-  }
-
-  const state = {
-    painType: "Pressure",
-    location: "Center",
-    activity: "Rest",
-    relief: "None",
-    symptoms: ["None"],
-    durationMins: null,
-  };
 
   function renderAllChips(){
     buildChips("painTypeChips", ENUMS.painType, {
@@ -1174,51 +1160,133 @@
     });
 
     const dwrap = $("durationChips");
-    dwrap.innerHTML = "";
-    ENUMS.durationMins.forEach(m=>{
-      const label = (m < 60) ? `${m} min` : (m%60 ? `${Math.floor(m/60)}h ${m%60}m` : `${Math.floor(m/60)}h`);
-      const div = document.createElement("div");
-      div.className = "chip";
-      div.textContent = label;
-      div.classList.toggle("selected", state.durationMins === m);
-      div.addEventListener("click", ()=>{
-        state.durationMins = (state.durationMins === m) ? null : m;
-        [...dwrap.children].forEach(ch=>ch.classList.remove("selected"));
+    if(dwrap){
+      dwrap.innerHTML = "";
+      ENUMS.durationMins.forEach(m=>{
+        const label = (m < 60) ? `${m} min` : (m%60 ? `${Math.floor(m/60)}h ${m%60}m` : `${Math.floor(m/60)}h`);
+        const div = document.createElement("div");
+        div.className = "chip";
+        div.textContent = label;
         div.classList.toggle("selected", state.durationMins === m);
-        scheduleDraftSave();
+        div.addEventListener("click", ()=>{
+          state.durationMins = (state.durationMins === m) ? null : m;
+          [...dwrap.children].forEach(ch=>ch.classList.remove("selected"));
+          div.classList.toggle("selected", state.durationMins === m);
+          scheduleDraftSave();
+        });
+        dwrap.appendChild(div);
       });
-      dwrap.appendChild(div);
-    });
+    }
   }
 
-  function readFormIntoDraftObj(){
-    const start = parseDTLocal($("startAt").value);
-    const ongoing = $("ongoing").value === "true";
-    const end = parseDTLocal($("endAt").value);
+  // ---- Form state helpers ----
+  function resetFormToDefaults(){
+    if($("startAt")) $("startAt").value = nowLocal();
+    if($("ongoing")) $("ongoing").value = "true";
+    if($("endAtWrap")) $("endAtWrap").style.display = "none";
+    if($("endAt")) $("endAt").value = "";
+    if($("severity")) $("severity").value = "5";
+    if($("severityVal")) $("severityVal").textContent = "5";
+    if($("notes")) $("notes").value = "";
+    if($("notesCount")) $("notesCount").textContent = "0";
+
+    if($("v_hr")) $("v_hr").value = "";
+    if($("v_spo2")) $("v_spo2").value = "";
+    if($("v_bpsys")) $("v_bpsys").value = "";
+    if($("v_bpdia")) $("v_bpdia").value = "";
+
+    state.painType = "Pressure";
+    state.location = "Center";
+    state.activity = "Rest";
+    state.relief = "None";
+    state.symptoms = ["None"];
+    state.durationMins = null;
+
+    if($("painTypeHelpText")) $("painTypeHelpText").textContent = PAIN_TYPE_HELP[state.painType];
+    if($("painTypeOtherWrap")) $("painTypeOtherWrap").style.display = "none";
+    if($("painTypeOtherText")) $("painTypeOtherText").value = "";
+    if($("painTypeOtherCount")) $("painTypeOtherCount").textContent = "0";
+
+    renderAllChips();
+  }
+
+  function readFormIntoObj(){
+    const start = parseDTLocal($("startAt")?.value);
+    const ongoing = ($("ongoing")?.value === "true");
+    const end = parseDTLocal($("endAt")?.value);
 
     return {
       startAt: start ? start.toISOString() : null,
       ongoing,
       endAt: (!ongoing && end) ? end.toISOString() : null,
       durationMins: (!ongoing && state.durationMins) ? state.durationMins : null,
-      severity: Number($("severity").value || 0),
+      severity: Number($("severity")?.value || 0),
 
       painType: state.painType,
-      painTypeOther: (state.painType === "Other") ? ( $("painTypeOtherText").value || "" ) : "",
+      painTypeOther: (state.painType === "Other") ? ( $("painTypeOtherText")?.value || "" ) : "",
       location: state.location,
       activity: state.activity,
       relief: state.relief,
       symptoms: Array.isArray(state.symptoms) ? state.symptoms : ["None"],
 
-      notes: $("notes").value || "",
+      notes: $("notes")?.value || "",
 
       vitals: {
-        hr: $("v_hr").value ? Number($("v_hr").value) : null,
-        spo2: $("v_spo2").value ? Number($("v_spo2").value) : null,
-        bpSys: $("v_bpsys").value ? Number($("v_bpsys").value) : null,
-        bpDia: $("v_bpdia").value ? Number($("v_bpdia").value) : null,
+        hr: $("v_hr")?.value ? Number($("v_hr").value) : null,
+        spo2: $("v_spo2")?.value ? Number($("v_spo2").value) : null,
+        bpSys: $("v_bpsys")?.value ? Number($("v_bpsys").value) : null,
+        bpDia: $("v_bpdia")?.value ? Number($("v_bpdia").value) : null,
       }
     };
+  }
+
+  function populateFormFromObj(obj){
+    if(!obj) return;
+
+    if($("startAt") && obj.startAt){
+      const d = new Date(obj.startAt);
+      const pad = (n)=>String(n).padStart(2,"0");
+      const v = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      $("startAt").value = v;
+    }
+
+    if($("ongoing")) $("ongoing").value = obj.ongoing ? "true" : "false";
+    if($("endAtWrap")) $("endAtWrap").style.display = obj.ongoing ? "none" : "block";
+
+    if($("endAt") && obj.endAt){
+      const d = new Date(obj.endAt);
+      const pad = (n)=>String(n).padStart(2,"0");
+      const v = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      $("endAt").value = v;
+    } else {
+      if($("endAt")) $("endAt").value = "";
+    }
+
+    if($("severity")) $("severity").value = String(obj.severity ?? 5);
+    if($("severityVal")) $("severityVal").textContent = String(obj.severity ?? 5);
+
+    state.painType = obj.painType || "Pressure";
+    state.location = obj.location || "Center";
+    state.activity = obj.activity || "Rest";
+    state.relief = obj.relief || "None";
+    state.symptoms = Array.isArray(obj.symptoms) && obj.symptoms.length ? obj.symptoms : ["None"];
+    state.durationMins = obj.durationMins ?? null;
+
+    if($("notes")) $("notes").value = obj.notes || "";
+    if($("notesCount")) $("notesCount").textContent = String((obj.notes || "").length);
+
+    if($("painTypeOtherText")) $("painTypeOtherText").value = obj.painTypeOther || "";
+    if($("painTypeOtherCount")) $("painTypeOtherCount").textContent = String((obj.painTypeOther || "").length);
+    if($("painTypeOtherWrap")) $("painTypeOtherWrap").style.display = (state.painType === "Other") ? "block" : "none";
+
+    if($("painTypeHelpText")) $("painTypeHelpText").textContent = PAIN_TYPE_HELP[state.painType] || "Tap a pain type to see a quick guide.";
+
+    if($("v_hr")) $("v_hr").value = obj.vitals?.hr ?? "";
+    if($("v_spo2")) $("v_spo2").value = obj.vitals?.spo2 ?? "";
+    if($("v_bpsys")) $("v_bpsys").value = obj.vitals?.bpSys ?? "";
+    if($("v_bpdia")) $("v_bpdia").value = obj.vitals?.bpDia ?? "";
+
+    renderAllChips();
   }
 
   function episodeSummaryLine(ep){
@@ -1232,22 +1300,22 @@
 
   function updateDraftHomeCard(){
     if(DRAFT && DRAFT.startAt){
-      $("resumeDraftBox").style.display = "block";
-      $("draftSummary").textContent = episodeSummaryLine(DRAFT);
+      if($("resumeDraftBox")) $("resumeDraftBox").style.display = "block";
+      if($("draftSummary")) $("draftSummary").textContent = episodeSummaryLine(DRAFT);
     } else {
-      $("resumeDraftBox").style.display = "none";
-      $("draftSummary").textContent = "";
+      if($("resumeDraftBox")) $("resumeDraftBox").style.display = "none";
+      if($("draftSummary")) $("draftSummary").textContent = "";
     }
   }
 
   function updateKPIs(){
     const last7 = filterByRange(EPISODES, "7").length;
     const last30 = filterByRange(EPISODES, "30").length;
-    $("kpi7d").textContent = String(last7);
-    $("kpi30d").textContent = String(last30);
+    if($("kpi7d")) $("kpi7d").textContent = String(last7);
+    if($("kpi30d")) $("kpi30d").textContent = String(last30);
 
     const sorted = [...EPISODES].sort((a,b)=> (new Date(b.startAt||0).getTime() - new Date(a.startAt||0).getTime()));
-    $("kpiLast").textContent = sorted.length ? `${sorted[0].severity ?? "—"}/10` : "—";
+    if($("kpiLast")) $("kpiLast").textContent = sorted.length ? `${sorted[0].severity ?? "—"}/10` : "—";
 
     const last30List = filterByRange(EPISODES, "30");
     const freq = {};
@@ -1260,18 +1328,19 @@
     Object.entries(freq).forEach(([k,n])=>{
       if(n > bestN){ bestN = n; best = `${k} (${n})`; }
     });
-    $("kpiCommonActivity").textContent = best;
+    if($("kpiCommonActivity")) $("kpiCommonActivity").textContent = best;
   }
 
   function renderHistory(){
-    const range = $("historyRange").value;
-    const sev = $("historySeverity").value;
+    const range = $("historyRange")?.value || "7";
+    const sev = $("historySeverity")?.value || "all";
 
     let list = filterByRange(EPISODES, range);
     list = filterBySeverity(list, sev);
     list.sort((a,b)=> (new Date(b.startAt||0).getTime() - new Date(a.startAt||0).getTime()));
 
     const wrap = $("historyList");
+    if(!wrap) return;
     wrap.innerHTML = "";
 
     if(!list.length){
@@ -1287,12 +1356,14 @@
       div.className = "item";
       const left = document.createElement("div");
       const right = document.createElement("div");
-      right.className = "right";
+      right.style.textAlign = "right";
+      right.style.minWidth = "90px";
 
       const title = document.createElement("b");
       title.textContent = fmtDateTime(ep.startAt || new Date());
 
       const sub = document.createElement("span");
+      sub.className = "small";
       const type = (ep.painType === "Other" && ep.painTypeOther) ? `Other(${ep.painTypeOther})` : (ep.painType || "—");
       sub.textContent = `${type} • ${ep.location || "—"} • ${ep.activity || "—"}`;
 
@@ -1302,6 +1373,7 @@
       const sevEl = document.createElement("b");
       sevEl.textContent = `${ep.severity ?? "—"}/10`;
       const dur = document.createElement("span");
+      dur.className = "small";
       dur.textContent = durationLabel(ep);
 
       right.appendChild(sevEl);
@@ -1310,59 +1382,7 @@
       div.appendChild(left);
       div.appendChild(right);
 
-      div.addEventListener("click", ()=>{
-        alert("To edit: open Log and adjust the most recent entry workflow. (If you want tap-to-edit, tell me and I’ll re-add it.)");
-      });
-
       wrap.appendChild(div);
-    });
-  }
-
-  function rowsForReport(list){
-    const tbody = $("reportTbody");
-    const cards = $("reportCards");
-    tbody.innerHTML = "";
-    cards.innerHTML = "";
-
-    list.forEach(ep=>{
-      const dt = fmtDateTime(ep.startAt);
-      const sev = `${ep.severity ?? "—"}/10`;
-      const dur = durationLabel(ep);
-      const act = ep.activity || "—";
-      const type = (ep.painType === "Other" && ep.painTypeOther) ? `Other (${ep.painTypeOther})` : (ep.painType || "—");
-      const typeLoc = `${type} • ${ep.location || "—"}`;
-      const symptoms = (Array.isArray(ep.symptoms) && ep.symptoms.length) ? ep.symptoms.join(", ") : "—";
-      const relief = ep.relief || "—";
-      const notes = ep.notes ? ep.notes : "";
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${dt}</td>
-        <td>${sev}</td>
-        <td>${dur}</td>
-        <td>${act}</td>
-        <td>${typeLoc}</td>
-        <td>${symptoms}</td>
-        <td>${relief}</td>
-        <td>${notes}</td>
-      `;
-      tbody.appendChild(tr);
-
-      const card = document.createElement("div");
-      card.className = "report-card";
-      card.innerHTML = `
-        <div class="report-kv">
-          <div>Date/Time</div><div>${dt}</div>
-          <div>Severity</div><div>${sev}</div>
-          <div>Duration</div><div>${dur}</div>
-          <div>Activity</div><div>${act}</div>
-          <div>Type/Location</div><div>${typeLoc}</div>
-          <div>Symptoms</div><div>${symptoms}</div>
-          <div>Relief</div><div>${relief}</div>
-          <div>Notes</div><div>${notes || "—"}</div>
-        </div>
-      `;
-      cards.appendChild(card);
     });
   }
 
@@ -1388,12 +1408,42 @@
     return `Total episodes: ${total}. Average severity: ${avg}/10 (max ${max}/10). Most common onset activity: ${topAct}.`;
   }
 
+  function rowsForReport(list, tbodyId){
+    const tbody = $(tbodyId);
+    if(!tbody) return;
+    tbody.innerHTML = "";
+    list.forEach(ep=>{
+      const dt = fmtDateTime(ep.startAt);
+      const sev = `${ep.severity ?? "—"}/10`;
+      const dur = durationLabel(ep);
+      const act = ep.activity || "—";
+      const type = (ep.painType === "Other" && ep.painTypeOther) ? `Other (${ep.painTypeOther})` : (ep.painType || "—");
+      const typeLoc = `${type} • ${ep.location || "—"}`;
+      const symptoms = (Array.isArray(ep.symptoms) && ep.symptoms.length) ? ep.symptoms.join(", ") : "—";
+      const relief = ep.relief || "—";
+      const notes = ep.notes ? ep.notes : "";
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${dt}</td>
+        <td>${sev}</td>
+        <td>${dur}</td>
+        <td>${act}</td>
+        <td>${typeLoc}</td>
+        <td>${symptoms}</td>
+        <td>${relief}</td>
+        <td>${notes}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
   function refreshReport(){
-    const range = $("exportRange").value;
+    const range = $("exportRange")?.value || "30";
     const list = filterByRange(EPISODES, range).sort((a,b)=> (new Date(a.startAt||0) - new Date(b.startAt||0)));
-    $("reportGeneratedAt").textContent = fmtDateTime(new Date());
-    $("reportSummary").textContent = buildSummaryText(list);
-    rowsForReport(list);
+    if($("reportGeneratedAt")) $("reportGeneratedAt").textContent = fmtDateTime(new Date());
+    if($("reportSummary")) $("reportSummary").textContent = buildSummaryText(list);
+    rowsForReport(list, "reportTbody");
   }
 
   function downloadCsv(list, filename="chest_pain_logs.csv"){
@@ -1443,22 +1493,18 @@
     URL.revokeObjectURL(url);
   }
 
-  async function ensureAuth(){
-    await signInAnonymously(auth);
-  }
-
-  function episodeColl(){
-    return collection(db, "vaults", VAULT_ID, "episodes");
-  }
-
+  // ---- Draft autosave ----
   function scheduleDraftSave(){
     if(getShareFromUrl()) return;
+    if(!VAULT_ID) return;
+
     setSync("Saving…");
     if(draftTimer) clearTimeout(draftTimer);
+
     draftTimer = setTimeout(async ()=>{
       try{
-        const data = readFormIntoDraftObj();
-        await setDoc(doc(db, "vaults", VAULT_ID, "draft", "current"), {
+        const data = readFormIntoObj();
+        await setDoc(draftDoc(), {
           ...data,
           updatedAt: serverTimestamp()
         }, {merge:true});
@@ -1470,8 +1516,155 @@
     }, 350);
   }
 
+  // ---- Critical fix: wire modal buttons to real actions ----
+  function closeLogSheet(){
+    hideModal();
+  }
+
+  async function discardDraftEverywhere(){
+    if(!VAULT_ID) return;
+    const ok = confirm("Discard this draft?");
+    if(!ok) return;
+
+    setSync("Saving…");
+    try{
+      await deleteDoc(draftDoc());
+      DRAFT = null;
+      updateDraftHomeCard();
+      resetFormToDefaults();
+      setSync("Synced");
+    }catch(e){
+      console.error(e);
+      setSync("Sync error (discard)");
+      alert("Could not discard draft. Check your connection / rules.");
+    }
+  }
+
+  async function saveLog(){
+    if(!VAULT_ID) return;
+
+    const data = readFormIntoObj();
+    if(!data.startAt){
+      alert("Please set a start time.");
+      return;
+    }
+
+    setSync("Saving…");
+
+    // prevent double taps
+    setSaveButtonsEnabled(false);
+
+    try{
+      const id = crypto.randomUUID();
+      await setDoc(doc(db, "vaults", VAULT_ID, "episodes", id), {
+        ...data,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+
+      // clear draft after successful save
+      await deleteDoc(draftDoc()).catch(()=>{});
+
+      DRAFT = null;
+      updateDraftHomeCard();
+      resetFormToDefaults();
+      hideModal();
+      setSync("Synced");
+    }catch(e){
+      console.error(e);
+      setSync("Sync error (save)");
+      alert("Could not save log. Check your connection / rules.");
+    }finally{
+      setSaveButtonsEnabled(true);
+    }
+  }
+
+  function setSaveButtonsEnabled(enabled){
+    const ids = ["saveSheet","saveSheetInline","closeSheet","closeSheetFooter","discardDraftBtnHeader","discardDraftBtnFooter"];
+    ids.forEach(id=>{
+      const el = $(id);
+      if(el) el.disabled = !enabled;
+    });
+  }
+
+  // ---- Share link (one active token) ----
+  function makeShareToken(){
+    // short + long to reduce transcription errors but still high entropy
+    return crypto.randomUUID().replaceAll("-","") + crypto.randomUUID().replaceAll("-","");
+  }
+
+  async function createOrReplaceShareLink(){
+    if(!VAULT_ID) return;
+    setSync("Saving…");
+    try{
+      const token = makeShareToken();
+      await setDoc(shareDoc(), {
+        token,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      }, {merge:false});
+      SHARE_TOKEN = token;
+      updateShareUI();
+      setSync("Synced");
+    }catch(e){
+      console.error(e);
+      setSync("Sync error (share)");
+      alert("Could not create share link. Check rules.");
+    }
+  }
+
+  async function revokeShareLink(){
+    if(!VAULT_ID) return;
+    const ok = confirm("Revoke the share link?");
+    if(!ok) return;
+
+    setSync("Saving…");
+    try{
+      await deleteDoc(shareDoc());
+      SHARE_TOKEN = null;
+      updateShareUI();
+      setSync("Synced");
+    }catch(e){
+      console.error(e);
+      setSync("Sync error (share)");
+      alert("Could not revoke share link. Check rules.");
+    }
+  }
+
+  async function copyShareLink(){
+    if(!SHARE_TOKEN) return;
+    const link = currentShareLink(SHARE_TOKEN);
+    try{
+      await navigator.clipboard.writeText(link);
+      alert("Share link copied.");
+    }catch{
+      prompt("Copy this share link:", link);
+    }
+  }
+
+  function updateShareUI(){
+    const box = $("shareLinkBox");
+    const copyBtn = $("copyShareBtn");
+    const revokeBtn = $("revokeShareBtn");
+    if(!box || !copyBtn || !revokeBtn) return;
+
+    if(SHARE_TOKEN){
+      box.style.display = "block";
+      box.textContent = currentShareLink(SHARE_TOKEN);
+      copyBtn.style.display = "inline-block";
+      revokeBtn.style.display = "inline-block";
+    }else{
+      box.style.display = "none";
+      box.textContent = "";
+      copyBtn.style.display = "none";
+      revokeBtn.style.display = "none";
+    }
+  }
+
+  // ---- Listeners ----
   async function startListeners(){
-    unsubEpisodes?.(); unsubDraft?.(); unsubShareMeta?.();
+    unsubEpisodes?.(); unsubDraft?.(); unsubShare?.();
+
     unsubEpisodes = onSnapshot(query(episodeColl(), orderBy("startAt","desc")), (snap)=>{
       const list = [];
       snap.forEach(d=>{
@@ -1488,7 +1681,7 @@
       setSync("Sync error (episodes)");
     });
 
-    unsubDraft = onSnapshot(doc(db, "vaults", VAULT_ID, "draft", "current"), (snap)=>{
+    unsubDraft = onSnapshot(draftDoc(), (snap)=>{
       DRAFT = snap.exists() ? snap.data() : null;
       updateDraftHomeCard();
     }, (err)=>{
@@ -1496,82 +1689,217 @@
       setSync("Sync error (draft)");
     });
 
-    unsubShareMeta = onSnapshot(doc(db, "vaults", VAULT_ID, "share", "active"), (snap)=>{
+    unsubShare = onSnapshot(shareDoc(), (snap)=>{
       SHARE_TOKEN = snap.exists() ? (snap.data().token || null) : null;
+      updateShareUI();
     }, ()=>{});
   }
 
+  // ---- Share view loader ----
+  async function loadSharedReport(token){
+    // Find the vault that has share.active.token == token
+    // We can't query across all vaults without an index/rules; so this approach requires you to
+    // store a reverse mapping doc in /shares/{token} -> {vaultId}.
+    //
+    // To keep things simple, we support share view ONLY if you also create:
+    // /shares/{token} { vaultId }
+    //
+    // If you don't have that yet, you can ignore share view.
+    try{
+      const reverse = await getDoc(doc(db, "shares", token));
+      if(!reverse.exists()){
+        $("shareError").style.display = "block";
+        return;
+      }
+      const vaultId = reverse.data().vaultId;
+      if(!vaultId){
+        $("shareError").style.display = "block";
+        return;
+      }
+
+      // load episodes read-only
+      const epsSnap = await getDocs(query(collection(db, "vaults", vaultId, "episodes"), orderBy("startAt","desc")));
+      const list = [];
+      epsSnap.forEach(d=>list.push(d.data()));
+      const range = "30";
+      const filtered = filterByRange(list, range).sort((a,b)=> (new Date(a.startAt||0)-new Date(b.startAt||0)));
+
+      $("shareGeneratedAt").textContent = fmtDateTime(new Date());
+      $("shareSummary").textContent = buildSummaryText(filtered);
+      rowsForReport(filtered, "shareTbody");
+
+      // Wire share view buttons
+      bindClick("sharePrintBtn", ()=>window.print());
+      bindClick("shareDownloadCsvBtn", ()=>downloadCsv(filtered, "chest_pain_shared_report.csv"));
+    }catch(e){
+      console.error(e);
+      const err = $("shareError");
+      if(err) err.style.display = "block";
+    }
+  }
+
+  // ---- Input wiring ----
   function hookInputs(){
-    $("ongoing").addEventListener("change", ()=>{
+    bindChange("ongoing", ()=>{
       const ongoing = $("ongoing").value === "true";
-      $("endAtWrap").style.display = ongoing ? "none" : "block";
+      if($("endAtWrap")) $("endAtWrap").style.display = ongoing ? "none" : "block";
       scheduleDraftSave();
     });
 
-    $("startAt").addEventListener("change", scheduleDraftSave);
-    $("endAt").addEventListener("change", scheduleDraftSave);
+    ["startAt","endAt"].forEach(id=>{
+      bindChange(id, scheduleDraftSave);
+    });
 
-    $("severity").addEventListener("input", ()=>{ $("severityVal").textContent = $("severity").value; });
-    $("severity").addEventListener("change", scheduleDraftSave);
+    bindInput("severity", ()=>{
+      if($("severityVal")) $("severityVal").textContent = $("severity").value;
+    });
+    bindChange("severity", scheduleDraftSave);
 
-    $("notes").addEventListener("input", ()=>{
-      $("notesCount").textContent = String(($("notes").value||"").length);
+    bindInput("notes", ()=>{
+      if($("notesCount")) $("notesCount").textContent = String(($("notes").value||"").length);
       scheduleDraftSave();
     });
 
-    $("painTypeOtherText").addEventListener("input", ()=>{
-      $("painTypeOtherCount").textContent = String(($("painTypeOtherText").value||"").length);
+    bindInput("painTypeOtherText", ()=>{
+      if($("painTypeOtherCount")) $("painTypeOtherCount").textContent = String(($("painTypeOtherText").value||"").length);
       scheduleDraftSave();
     });
 
     ["v_hr","v_spo2","v_bpsys","v_bpdia"].forEach(id=>{
-      $(id).addEventListener("input", scheduleDraftSave);
-      $(id).addEventListener("change", scheduleDraftSave);
+      bindInput(id, scheduleDraftSave);
+      bindChange(id, scheduleDraftSave);
     });
   }
 
+  // ---- Navigation wiring ----
   function wireNav(){
-    $("navHome").onclick = ()=> setView("Home");
-    $("navHistory").onclick = ()=> { setView("History"); renderHistory(); };
-    $("navExport").onclick = ()=> { setView("Export"); refreshReport(); };
-    $("navLog").onclick = ()=> { showModal(); };
+    bindClick("navHome", ()=> setView("Home"));
+    bindClick("navHistory", ()=> { setView("History"); renderHistory(); });
+    bindClick("navExport", ()=> { setView("Export"); refreshReport(); });
+    bindClick("navLog", ()=> { showModal(); });
 
-    $("tabHome").onclick = ()=> setView("Home");
-    $("tabHistory").onclick = ()=> { setView("History"); renderHistory(); };
-    $("tabExport").onclick = ()=> { setView("Export"); refreshReport(); };
-    $("tabLog").onclick = ()=> { showModal(); };
+    bindClick("tabHome", ()=> setView("Home"));
+    bindClick("tabHistory", ()=> { setView("History"); renderHistory(); });
+    bindClick("tabExport", ()=> { setView("Export"); refreshReport(); });
+    bindClick("tabLog", ()=> { showModal(); });
 
-    $("homeLogNow").onclick = ()=> { resetFormToDefaults(); showModal(); scheduleDraftSave(); };
+    // Home primary log
+    bindClick("homeLogNow", ()=>{
+      resetFormToDefaults();
+      showModal();
+      scheduleDraftSave();
+    });
 
-    $("copyUidLinkBtn2").onclick = copyUidLink;
-    $("loadUidBtn").onclick = loadExistingUid;
-    $("toggleUidLink").onclick = ()=>{
+    // Resume draft
+    bindClick("resumeDraftBtn", ()=>{
+      if(DRAFT){
+        populateFormFromObj(DRAFT);
+        showModal();
+      }else{
+        resetFormToDefaults();
+        showModal();
+      }
+    });
+
+    // Draft discard on home card
+    bindClick("discardDraftBtn", discardDraftEverywhere);
+
+    // Unique link buttons
+    bindClick("copyUidLinkBtn2", copyUidLink);
+    bindClick("loadUidBtn", loadExistingUid);
+    bindClick("toggleUidLink", ()=>{
       const wrap = $("uidLinkBoxWrap");
+      const btn = $("toggleUidLink");
+      if(!wrap || !btn) return;
       const show = wrap.style.display !== "block";
       wrap.style.display = show ? "block" : "none";
-      $("toggleUidLink").textContent = show ? "Hide link" : "Show link";
-    };
+      btn.textContent = show ? "Hide link" : "Show link";
+    });
 
-    $("historyRange").onchange = renderHistory;
-    $("historySeverity").onchange = renderHistory;
+    // History filters
+    bindChange("historyRange", renderHistory);
+    bindChange("historySeverity", renderHistory);
 
-    $("refreshReportBtn").onclick = refreshReport;
-    $("exportRange").onchange = refreshReport;
-    $("printBtn").onclick = ()=> window.print();
-    $("downloadCsvBtn").onclick = ()=>{
-      const list = filterByRange(EPISODES, $("exportRange").value).sort((a,b)=> (new Date(a.startAt||0)-new Date(b.startAt||0)));
+    // Export
+    bindClick("refreshReportBtn", refreshReport);
+    bindChange("exportRange", refreshReport);
+    bindClick("printBtn", ()=> window.print());
+    bindClick("downloadCsvBtn", ()=>{
+      const list = filterByRange(EPISODES, $("exportRange")?.value || "30")
+        .sort((a,b)=> (new Date(a.startAt||0)-new Date(b.startAt||0)));
       downloadCsv(list, "chest_pain_report.csv");
-    };
-    $("exportAllCsvBtn").onclick = ()=> {
+    });
+    bindClick("exportAllCsvBtn", ()=>{
       const list = [...EPISODES].sort((a,b)=> (new Date(a.startAt||0)-new Date(b.startAt||0)));
       downloadCsv(list, "chest_pain_all_data.csv");
-    };
+    });
+
+    bindClick("clearAllBtn", async ()=>{
+      const ok = confirm("Clear ALL data (device + Firebase)? This cannot be undone.");
+      if(!ok) return;
+
+      setSync("Saving…");
+      try{
+        // delete draft
+        await deleteDoc(draftDoc()).catch(()=>{});
+
+        // delete share
+        await deleteDoc(shareDoc()).catch(()=>{});
+
+        // delete episodes
+        const snap = await getDocs(collection(db, "vaults", VAULT_ID, "episodes"));
+        const deletions = [];
+        snap.forEach(d=>deletions.push(deleteDoc(d.ref)));
+        await Promise.allSettled(deletions);
+
+        EPISODES = [];
+        DRAFT = null;
+        SHARE_TOKEN = null;
+        updateShareUI();
+        updateDraftHomeCard();
+        updateKPIs();
+        renderHistory();
+        refreshReport();
+        resetFormToDefaults();
+        setSync("Synced");
+      }catch(e){
+        console.error(e);
+        setSync("Sync error (clear)");
+        alert("Could not clear everything. Check rules.");
+      }
+    });
+
+    // Share link buttons
+    bindClick("createShareBtn", createOrReplaceShareLink);
+    bindClick("copyShareBtn", copyShareLink);
+    bindClick("revokeShareBtn", revokeShareLink);
+
+    // ---- CRITICAL FIX: Modal buttons now work ----
+    bindClick("closeSheet", closeLogSheet);
+    bindClick("closeSheetFooter", closeLogSheet);
+
+    bindClick("discardDraftBtnHeader", discardDraftEverywhere);
+    bindClick("discardDraftBtnFooter", discardDraftEverywhere);
+
+    bindClick("saveSheet", saveLog);
+    bindClick("saveSheetInline", saveLog);
   }
 
+  // ---- Auth ----
+  async function ensureAuth(){
+    await signInAnonymously(auth);
+  }
+
+  // ---- Main ----
   async function main(){
     setSync("Starting…");
-    if(getShareFromUrl()){
-      alert("Share view not included in this trimmed build. Use the full build if needed.");
+
+    const shareToken = getShareFromUrl();
+    if(shareToken){
+      setView("Share");
+      await ensureAuth();
+      await loadSharedReport(shareToken);
+      setSync("Synced");
       return;
     }
 
@@ -1587,6 +1915,7 @@
 
     refreshReport();
     renderHistory();
+    updateShareUI();
     setSync("Synced");
   }
 
