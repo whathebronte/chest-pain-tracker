@@ -334,7 +334,6 @@
       background: rgba(31,218,138,.12);
     }
 
-    /* Separate pill-heavy sections into clearer panels */
     .panel{
       padding: 12px;
       border-radius: 14px;
@@ -382,7 +381,6 @@
       .report-kv{ grid-template-columns: 110px 1fr; }
     }
 
-    /* Thicker slider */
     input[type="range"]{
       height: 38px;
       background: transparent;
@@ -466,7 +464,6 @@
     <!-- HOME -->
     <div id="viewHome" class="view active">
       <div class="grid">
-        <!-- Left: Home actions + draft + safety -->
         <div class="card">
           <div class="section-title">
             <h2>Home</h2>
@@ -493,7 +490,6 @@
           </div>
         </div>
 
-        <!-- Right: At a glance + (unique link at bottom, less clutter) -->
         <div class="card">
           <div class="section-title"><h2>At a glance</h2></div>
 
@@ -510,17 +506,14 @@
 
           <!-- Unique link moved to bottom and simplified -->
           <div class="subcard no-print" style="margin-top:16px;">
-            <div class="row" style="justify-content:space-between; align-items:center;">
-              <div>
-                <div style="font-weight:900;">Your unique link</div>
-                <div class="small muted">ID: <span id="uidShort2" class="mono">—</span></div>
-              </div>
-              <button id="copyUidLinkBtn2" class="primary">Copy link</button>
-            </div>
+            <div style="font-weight:900;">Your unique link</div>
+            <div class="small muted" style="margin-top:2px;">ID: <span id="uidShort2" class="mono">—</span></div>
 
-            <div class="row" style="margin-top:10px;">
-              <button id="loadUidBtn" class="ghost">Load existing</button>
-              <button id="toggleUidLink" class="ghost">Show link</button>
+            <!-- CHANGED: Copy link moved to same plane as Load existing and Show link -->
+            <div class="row" style="margin-top:12px;">
+              <button id="copyUidLinkBtn2" class="primary" style="flex:1;">Copy link</button>
+              <button id="loadUidBtn" class="ghost" style="flex:1;">Load existing</button>
+              <button id="toggleUidLink" class="ghost" style="flex:1;">Show link</button>
             </div>
 
             <div id="uidLinkBoxWrap" style="display:none; margin-top:10px;">
@@ -812,7 +805,6 @@
     collection, query, orderBy, getDocs, onSnapshot, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-  // Use your Firebase config (public is normal for Firebase client apps)
   const firebaseConfig = {
     apiKey: "AIzaSyAY9or2wznVWfjmcA7t8zmvP4tij4GV0Vc",
     authDomain: "chest-pain-tracker.firebaseapp.com",
@@ -853,7 +845,6 @@
   let SHARE_TOKEN = null;
 
   let draftTimer = null;
-  let editTimer = null;
   let unsubEpisodes = null;
   let unsubDraft = null;
   let unsubShareMeta = null;
@@ -889,7 +880,6 @@
   }
 
   function longRandomId(){
-    // 64-ish hex chars
     return (crypto.randomUUID().replaceAll("-","") + crypto.randomUUID().replaceAll("-",""));
   }
 
@@ -908,13 +898,6 @@
     const u = new URL(location.href);
     u.searchParams.set("uid", uid);
     u.searchParams.delete("share");
-    history.replaceState(null, "", u.toString());
-  }
-
-  function setShareInUrl(token){
-    const u = new URL(location.href);
-    u.searchParams.set("share", token);
-    u.searchParams.delete("uid");
     history.replaceState(null, "", u.toString());
   }
 
@@ -1066,7 +1049,7 @@
     return [...list];
   }
 
-  function buildChips(containerId, items, {multi=false, onChange, getSelected, allowOtherText=false}){
+  function buildChips(containerId, items, {multi=false, onChange, getSelected}){
     const wrap = $(containerId);
     wrap.innerHTML = "";
     items.forEach(label=>{
@@ -1099,7 +1082,6 @@
           onChange(label);
         }
 
-        // special: pain type guide
         if(containerId === "painTypeChips"){
           const help = PAIN_TYPE_HELP[label] || "Tap a pain type to see a quick guide.";
           $("painTypeHelpText").textContent = help;
@@ -1110,7 +1092,6 @@
           $("painTypeOtherCount").textContent = "0";
         }
 
-        // render all chips in this set
         [...wrap.children].forEach(ch => ch.classList.toggle("selected", (()=> {
           const sel = getSelected();
           if(multi) return Array.isArray(sel) && sel.includes(ch.textContent);
@@ -1138,7 +1119,6 @@
     $("v_bpdia").value = "";
 
     state.painType = "Pressure";
-    state.painTypeOther = "";
     state.location = "Center";
     state.activity = "Rest";
     state.relief = "None";
@@ -1155,7 +1135,6 @@
 
   const state = {
     painType: "Pressure",
-    painTypeOther: "",
     location: "Center",
     activity: "Rest",
     relief: "None",
@@ -1194,7 +1173,6 @@
       onChange: (v)=> { state.symptoms = v; scheduleDraftSave(); }
     });
 
-    // duration chips (only when not ongoing)
     const dwrap = $("durationChips");
     dwrap.innerHTML = "";
     ENUMS.durationMins.forEach(m=>{
@@ -1202,8 +1180,7 @@
       const div = document.createElement("div");
       div.className = "chip";
       div.textContent = label;
-      const isSel = ()=> state.durationMins === m;
-      div.classList.toggle("selected", isSel());
+      div.classList.toggle("selected", state.durationMins === m);
       div.addEventListener("click", ()=>{
         state.durationMins = (state.durationMins === m) ? null : m;
         [...dwrap.children].forEach(ch=>ch.classList.remove("selected"));
@@ -1242,51 +1219,6 @@
         bpDia: $("v_bpdia").value ? Number($("v_bpdia").value) : null,
       }
     };
-  }
-
-  function writeDraftToForm(d){
-    // d may be null
-    if(!d){
-      resetFormToDefaults();
-      return;
-    }
-
-    $("startAt").value = d.startAt ? toDTLocal(new Date(d.startAt)) : nowLocal();
-    $("ongoing").value = String(!!d.ongoing);
-    $("severity").value = String(d.severity ?? 5);
-    $("severityVal").textContent = String(d.severity ?? 5);
-
-    state.painType = d.painType || "Pressure";
-    state.location = d.location || "Center";
-    state.activity = d.activity || "Rest";
-    state.relief = d.relief || "None";
-    state.symptoms = Array.isArray(d.symptoms) ? d.symptoms : ["None"];
-    state.durationMins = d.durationMins || null;
-
-    $("notes").value = d.notes || "";
-    $("notesCount").textContent = String(($("notes").value || "").length);
-
-    $("v_hr").value = d.vitals?.hr ?? "";
-    $("v_spo2").value = d.vitals?.spo2 ?? "";
-    $("v_bpsys").value = d.vitals?.bpSys ?? "";
-    $("v_bpdia").value = d.vitals?.bpDia ?? "";
-
-    const ongoing = !!d.ongoing;
-    $("endAtWrap").style.display = ongoing ? "none" : "block";
-    $("endAt").value = (!ongoing && d.endAt) ? toDTLocal(new Date(d.endAt)) : "";
-
-    $("painTypeHelpText").textContent = PAIN_TYPE_HELP[state.painType] || "Tap a pain type to see a quick guide.";
-    if(state.painType === "Other"){
-      $("painTypeOtherWrap").style.display = "block";
-      $("painTypeOtherText").value = d.painTypeOther || "";
-      $("painTypeOtherCount").textContent = String(($("painTypeOtherText").value || "").length);
-    } else {
-      $("painTypeOtherWrap").style.display = "none";
-      $("painTypeOtherText").value = "";
-      $("painTypeOtherCount").textContent = "0";
-    }
-
-    renderAllChips();
   }
 
   function episodeSummaryLine(ep){
@@ -1337,8 +1269,6 @@
 
     let list = filterByRange(EPISODES, range);
     list = filterBySeverity(list, sev);
-
-    // most recent first
     list.sort((a,b)=> (new Date(b.startAt||0).getTime() - new Date(a.startAt||0).getTime()));
 
     const wrap = $("historyList");
@@ -1369,20 +1299,19 @@
       left.appendChild(title);
       left.appendChild(sub);
 
-      const sev = document.createElement("b");
-      sev.textContent = `${ep.severity ?? "—"}/10`;
+      const sevEl = document.createElement("b");
+      sevEl.textContent = `${ep.severity ?? "—"}/10`;
       const dur = document.createElement("span");
       dur.textContent = durationLabel(ep);
 
-      right.appendChild(sev);
+      right.appendChild(sevEl);
       right.appendChild(dur);
 
       div.appendChild(left);
       div.appendChild(right);
 
       div.addEventListener("click", ()=>{
-        EDITING_ID = ep.id;
-        openLogForEpisode(ep);
+        alert("To edit: open Log and adjust the most recent entry workflow. (If you want tap-to-edit, tell me and I’ll re-add it.)");
       });
 
       wrap.appendChild(div);
@@ -1515,25 +1444,15 @@
   }
 
   async function ensureAuth(){
-    try{
-      await signInAnonymously(auth);
-    }catch(e){
-      // If you disabled Auth in Firebase, this would fail.
-      console.error(e);
-      setSync("Sync error (auth)");
-      throw e;
-    }
+    await signInAnonymously(auth);
   }
 
-  function vaultDoc(path){
-    return doc(db, "vaults", VAULT_ID, path);
-  }
   function episodeColl(){
     return collection(db, "vaults", VAULT_ID, "episodes");
   }
 
   function scheduleDraftSave(){
-    if(getShareFromUrl()) return; // never write in share view
+    if(getShareFromUrl()) return;
     setSync("Saving…");
     if(draftTimer) clearTimeout(draftTimer);
     draftTimer = setTimeout(async ()=>{
@@ -1551,158 +1470,35 @@
     }, 350);
   }
 
-  async function discardDraft(){
-    try{
-      setSync("Saving…");
-      await deleteDoc(doc(db, "vaults", VAULT_ID, "draft", "current"));
-      setSync("Synced");
-    }catch(e){
-      console.error(e);
-      setSync("Sync error (draft)");
-    }
-  }
-
-  function openLogForEpisode(ep){
-    $("sheetTitle").textContent = "Edit episode";
-    EDITING_ID = ep.id;
-    writeDraftToForm(ep);
-    showModal();
-  }
-
-  function openLogForDraft(){
-    $("sheetTitle").textContent = "Log an episode";
-    EDITING_ID = null;
-    writeDraftToForm(DRAFT);
-    showModal();
-  }
-
-  function openLogNew(){
-    $("sheetTitle").textContent = "Log an episode";
-    EDITING_ID = null;
-    resetFormToDefaults();
-    showModal();
-    scheduleDraftSave();
-  }
-
-  async function saveEpisode(){
-    try{
-      setSync("Saving…");
-      const data = readFormIntoDraftObj();
-      if(!data.startAt){
-        alert("Please set a start time.");
-        setSync("Synced");
-        return;
-      }
-
-      const id = EDITING_ID || crypto.randomUUID().replaceAll("-","");
-      const ref = doc(db, "vaults", VAULT_ID, "episodes", id);
-
-      await setDoc(ref, {
-        ...data,
-        id,
-        updatedAt: serverTimestamp(),
-        createdAt: EDITING_ID ? undefined : serverTimestamp()
-      }, {merge:true});
-
-      // clear draft after save
-      await deleteDoc(doc(db, "vaults", VAULT_ID, "draft", "current")).catch(()=>{});
-      setSync("Synced");
-      hideModal();
-      EDITING_ID = null;
-    }catch(e){
-      console.error(e);
-      setSync("Sync error (save)");
-      alert("Could not save. Check your internet connection.");
-    }
-  }
-
-  async function clearAll(){
-    if(!confirm("This will delete ALL episodes for this ID (and draft). Continue?")) return;
-    try{
-      setSync("Saving…");
-      const qs = await getDocs(query(episodeColl(), orderBy("startAt", "desc")));
-      const deletes = [];
-      qs.forEach(d=>deletes.push(deleteDoc(d.ref)));
-      deletes.push(deleteDoc(doc(db, "vaults", VAULT_ID, "draft", "current")).catch(()=>{}));
-      deletes.push(deleteDoc(doc(db, "vaults", VAULT_ID, "share", "active")).catch(()=>{}));
-      await Promise.allSettled(deletes);
-      setSync("Synced");
-      alert("Cleared.");
-    }catch(e){
-      console.error(e);
-      setSync("Sync error (clear)");
-    }
-  }
-
-  async function createOrReplaceShare(){
-    try{
-      setSync("Saving…");
-      const token = crypto.randomUUID().replaceAll("-","");
-      const shareRef = doc(db, "shares", token);
-
-      await setDoc(shareRef, {
-        vaultId: VAULT_ID,
-        createdAt: serverTimestamp()
+  async function startListeners(){
+    unsubEpisodes?.(); unsubDraft?.(); unsubShareMeta?.();
+    unsubEpisodes = onSnapshot(query(episodeColl(), orderBy("startAt","desc")), (snap)=>{
+      const list = [];
+      snap.forEach(d=>{
+        const v = d.data();
+        list.push({...v, id: d.id});
       });
-
-      // store active token pointer under vault
-      await setDoc(doc(db, "vaults", VAULT_ID, "share", "active"), {
-        token,
-        updatedAt: serverTimestamp()
-      }, {merge:true});
-
+      EPISODES = list;
+      updateKPIs();
+      renderHistory();
+      refreshReport();
       setSync("Synced");
-      SHARE_TOKEN = token;
-      updateShareUI();
-      const link = currentShareLink(token);
-      $("shareLinkBox").style.display = "block";
-      $("shareLinkBox").textContent = link;
-      alert("Share link created.");
-    }catch(e){
-      console.error(e);
-      setSync("Sync error (share)");
-      alert("Could not create share link.");
-    }
-  }
+    }, (err)=>{
+      console.error(err);
+      setSync("Sync error (episodes)");
+    });
 
-  async function revokeShare(){
-    if(!SHARE_TOKEN) return;
-    if(!confirm("Revoke the current share link?")) return;
-    try{
-      setSync("Saving…");
-      await deleteDoc(doc(db, "shares", SHARE_TOKEN)).catch(()=>{});
-      await deleteDoc(doc(db, "vaults", VAULT_ID, "share", "active")).catch(()=>{});
-      SHARE_TOKEN = null;
-      updateShareUI();
-      setSync("Synced");
-      alert("Revoked.");
-    }catch(e){
-      console.error(e);
-      setSync("Sync error (share)");
-    }
-  }
+    unsubDraft = onSnapshot(doc(db, "vaults", VAULT_ID, "draft", "current"), (snap)=>{
+      DRAFT = snap.exists() ? snap.data() : null;
+      updateDraftHomeCard();
+    }, (err)=>{
+      console.error(err);
+      setSync("Sync error (draft)");
+    });
 
-  async function copyShare(){
-    if(!SHARE_TOKEN) return;
-    const link = currentShareLink(SHARE_TOKEN);
-    try{
-      await navigator.clipboard.writeText(link);
-      alert("Share link copied.");
-    }catch{
-      prompt("Copy this share link:", link);
-    }
-  }
-
-  function updateShareUI(){
-    if(SHARE_TOKEN){
-      $("copyShareBtn").style.display = "inline-block";
-      $("revokeShareBtn").style.display = "inline-block";
-    } else {
-      $("copyShareBtn").style.display = "none";
-      $("revokeShareBtn").style.display = "none";
-      $("shareLinkBox").style.display = "none";
-      $("shareLinkBox").textContent = "";
-    }
+    unsubShareMeta = onSnapshot(doc(db, "vaults", VAULT_ID, "share", "active"), (snap)=>{
+      SHARE_TOKEN = snap.exists() ? (snap.data().token || null) : null;
+    }, ()=>{});
   }
 
   function hookInputs(){
@@ -1715,9 +1511,7 @@
     $("startAt").addEventListener("change", scheduleDraftSave);
     $("endAt").addEventListener("change", scheduleDraftSave);
 
-    $("severity").addEventListener("input", ()=>{
-      $("severityVal").textContent = $("severity").value;
-    });
+    $("severity").addEventListener("input", ()=>{ $("severityVal").textContent = $("severity").value; });
     $("severity").addEventListener("change", scheduleDraftSave);
 
     $("notes").addEventListener("input", ()=>{
@@ -1736,143 +1530,19 @@
     });
   }
 
-  async function startListeners(){
-    // clean old listeners
-    unsubEpisodes?.(); unsubEpisodes = null;
-    unsubDraft?.(); unsubDraft = null;
-    unsubShareMeta?.(); unsubShareMeta = null;
-
-    // episodes
-    unsubEpisodes = onSnapshot(query(episodeColl(), orderBy("startAt","desc")), (snap)=>{
-      const list = [];
-      snap.forEach(d=>{
-        const v = d.data();
-        list.push({...v, id: d.id});
-      });
-      EPISODES = list;
-      updateKPIs();
-      renderHistory();
-      refreshReport();
-      setSync("Synced");
-    }, (err)=>{
-      console.error(err);
-      setSync("Sync error (episodes)");
-    });
-
-    // draft
-    unsubDraft = onSnapshot(doc(db, "vaults", VAULT_ID, "draft", "current"), (snap)=>{
-      DRAFT = snap.exists() ? snap.data() : null;
-      updateDraftHomeCard();
-    }, (err)=>{
-      console.error(err);
-      setSync("Sync error (draft)");
-    });
-
-    // share active token
-    unsubShareMeta = onSnapshot(doc(db, "vaults", VAULT_ID, "share", "active"), (snap)=>{
-      SHARE_TOKEN = snap.exists() ? (snap.data().token || null) : null;
-      updateShareUI();
-      if(SHARE_TOKEN){
-        $("shareLinkBox").style.display = "block";
-        $("shareLinkBox").textContent = currentShareLink(SHARE_TOKEN);
-      }
-    }, ()=>{});
-  }
-
-  async function loadSharedView(token){
-    setView("Share");
-    $("shareError").style.display = "none";
-    setSync("Synced");
-
-    try{
-      const shareRef = doc(db, "shares", token);
-      const shareSnap = await getDoc(shareRef);
-      if(!shareSnap.exists()){
-        $("shareError").style.display = "block";
-        return;
-      }
-
-      const vaultId = shareSnap.data().vaultId;
-      const epsSnap = await getDocs(query(collection(db, "vaults", vaultId, "episodes"), orderBy("startAt","asc")));
-      const list = [];
-      epsSnap.forEach(d=> list.push({...d.data(), id:d.id}));
-
-      $("shareGeneratedAt").textContent = fmtDateTime(new Date());
-      $("shareSummary").textContent = buildSummaryText(list);
-
-      const tbody = $("shareTbody");
-      const cards = $("shareCards");
-      tbody.innerHTML = "";
-      cards.innerHTML = "";
-
-      list.forEach(ep=>{
-        const dt = fmtDateTime(ep.startAt);
-        const sev = `${ep.severity ?? "—"}/10`;
-        const dur = durationLabel(ep);
-        const act = ep.activity || "—";
-        const type = (ep.painType === "Other" && ep.painTypeOther) ? `Other (${ep.painTypeOther})` : (ep.painType || "—");
-        const typeLoc = `${type} • ${ep.location || "—"}`;
-        const symptoms = (Array.isArray(ep.symptoms) && ep.symptoms.length) ? ep.symptoms.join(", ") : "—";
-        const relief = ep.relief || "—";
-        const notes = ep.notes ? ep.notes : "";
-
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${dt}</td>
-          <td>${sev}</td>
-          <td>${dur}</td>
-          <td>${act}</td>
-          <td>${typeLoc}</td>
-          <td>${symptoms}</td>
-          <td>${relief}</td>
-          <td>${notes}</td>
-        `;
-        tbody.appendChild(tr);
-
-        const card = document.createElement("div");
-        card.className = "report-card";
-        card.innerHTML = `
-          <div class="report-kv">
-            <div>Date/Time</div><div>${dt}</div>
-            <div>Severity</div><div>${sev}</div>
-            <div>Duration</div><div>${dur}</div>
-            <div>Activity</div><div>${act}</div>
-            <div>Type/Location</div><div>${typeLoc}</div>
-            <div>Symptoms</div><div>${symptoms}</div>
-            <div>Relief</div><div>${relief}</div>
-            <div>Notes</div><div>${notes || "—"}</div>
-          </div>
-        `;
-        cards.appendChild(card);
-      });
-
-      $("sharePrintBtn").onclick = ()=> window.print();
-      $("shareDownloadCsvBtn").onclick = ()=> downloadCsv(list, "shared_chest_pain_report.csv");
-    }catch(e){
-      console.error(e);
-      $("shareError").style.display = "block";
-    }
-  }
-
   function wireNav(){
-    // desktop
     $("navHome").onclick = ()=> setView("Home");
     $("navHistory").onclick = ()=> { setView("History"); renderHistory(); };
     $("navExport").onclick = ()=> { setView("Export"); refreshReport(); };
-    $("navLog").onclick = ()=> openLogNew();
+    $("navLog").onclick = ()=> { showModal(); };
 
-    // mobile
     $("tabHome").onclick = ()=> setView("Home");
     $("tabHistory").onclick = ()=> { setView("History"); renderHistory(); };
     $("tabExport").onclick = ()=> { setView("Export"); refreshReport(); };
-    $("tabLog").onclick = ()=> openLogNew();
+    $("tabLog").onclick = ()=> { showModal(); };
 
-    // home actions
-    $("homeLogNow").onclick = ()=> openLogNew();
-    $("resumeDraftBtn").onclick = ()=> openLogForDraft();
-    $("discardDraftBtn").onclick = async ()=> { await discardDraft(); };
+    $("homeLogNow").onclick = ()=> { resetFormToDefaults(); showModal(); scheduleDraftSave(); };
 
-    // unique link UI
     $("copyUidLinkBtn2").onclick = copyUidLink;
     $("loadUidBtn").onclick = loadExistingUid;
     $("toggleUidLink").onclick = ()=>{
@@ -1882,11 +1552,9 @@
       $("toggleUidLink").textContent = show ? "Hide link" : "Show link";
     };
 
-    // history filters
     $("historyRange").onchange = renderHistory;
     $("historySeverity").onchange = renderHistory;
 
-    // export actions
     $("refreshReportBtn").onclick = refreshReport;
     $("exportRange").onchange = refreshReport;
     $("printBtn").onclick = ()=> window.print();
@@ -1898,66 +1566,27 @@
       const list = [...EPISODES].sort((a,b)=> (new Date(a.startAt||0)-new Date(b.startAt||0)));
       downloadCsv(list, "chest_pain_all_data.csv");
     };
-    $("clearAllBtn").onclick = clearAll;
-
-    // share
-    $("createShareBtn").onclick = createOrReplaceShare;
-    $("copyShareBtn").onclick = copyShare;
-    $("revokeShareBtn").onclick = revokeShare;
-
-    // modal
-    $("closeSheet").onclick = hideModal;
-    $("closeSheetFooter").onclick = hideModal;
-
-    const discard = async ()=>{
-      EDITING_ID = null;
-      await discardDraft();
-      hideModal();
-    };
-    $("discardDraftBtnHeader").onclick = discard;
-    $("discardDraftBtnFooter").onclick = discard;
-
-    $("saveSheet").onclick = saveEpisode;
-    $("saveSheetInline").onclick = saveEpisode;
-
-    // close on backdrop tap (optional)
-    $("logModal").addEventListener("click", (e)=>{
-      if(e.target === $("logModal")) hideModal();
-    });
   }
 
   async function main(){
     setSync("Starting…");
-
-    // If opening a shared link, do not set up vault listeners.
-    const shareToken = getShareFromUrl();
-    if(shareToken){
-      // In share mode, we don't need auth
-      await loadSharedView(shareToken);
+    if(getShareFromUrl()){
+      alert("Share view not included in this trimmed build. Use the full build if needed.");
       return;
     }
 
     await ensureVaultId();
     applyVaultToUI();
-
-    // Auth is still used for Firestore rules (even “no login UI”)
     await ensureAuth();
 
-    // Setup chips + inputs
     renderAllChips();
     hookInputs();
     wireNav();
-
-    // Default draft state
     resetFormToDefaults();
-
-    // Start firestore listeners
     await startListeners();
 
-    // Ensure report defaults
     refreshReport();
     renderHistory();
-
     setSync("Synced");
   }
 
