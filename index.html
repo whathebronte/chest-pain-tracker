@@ -1593,44 +1593,61 @@
     return crypto.randomUUID().replaceAll("-","") + crypto.randomUUID().replaceAll("-","");
   }
 
-  async function createOrReplaceShareLink(){
-    if(!VAULT_ID) return;
-    setSync("Saving…");
-    try{
-      const token = makeShareToken();
-      await setDoc(shareDoc(), {
-        token,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      }, {merge:false});
-      SHARE_TOKEN = token;
-      updateShareUI();
-      setSync("Synced");
-    }catch(e){
-      console.error(e);
-      setSync("Sync error (share)");
-      alert("Could not create share link. Check rules.");
-    }
+async function createOrReplaceShareLink(){
+  if(!VAULT_ID) return;
+  setSync("Saving…");
+  try{
+    const token = makeShareToken();
+
+    // Write active token inside the vault (owner view)
+    await setDoc(shareDoc(), {
+      token,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    }, {merge:false});
+
+    // Reverse lookup so ?share=TOKEN can find vaultId
+    await setDoc(doc(db, "shares", token), {
+      vaultId: VAULT_ID,
+      createdAt: serverTimestamp()
+    }, {merge:false});
+
+    SHARE_TOKEN = token;
+    updateShareUI();
+    setSync("Synced");
+  }catch(e){
+    console.error(e);
+    setSync("Sync error (share)");
+    alert("Could not create share link. Check rules.");
   }
+}
 
-  async function revokeShareLink(){
-    if(!VAULT_ID) return;
-    const ok = confirm("Revoke the share link?");
-    if(!ok) return;
+async function revokeShareLink(){
+  if(!VAULT_ID) return;
+  const ok = confirm("Revoke the share link?");
+  if(!ok) return;
 
-    setSync("Saving…");
-    try{
-      await deleteDoc(shareDoc());
-      SHARE_TOKEN = null;
-      updateShareUI();
-      setSync("Synced");
-    }catch(e){
-      console.error(e);
-      setSync("Sync error (share)");
-      alert("Could not revoke share link. Check rules.");
+  setSync("Saving…");
+  try{
+    // delete reverse lookup first (if it exists)
+    if(SHARE_TOKEN){
+      await deleteDoc(doc(db, "shares", SHARE_TOKEN)).catch(()=>{});
     }
-  }
 
+    // delete active token in vault
+    await deleteDoc(shareDoc()).catch(()=>{});
+
+    SHARE_TOKEN = null;
+    updateShareUI();
+    setSync("Synced");
+  }catch(e){
+    console.error(e);
+    setSync("Sync error (share)");
+    alert("Could not revoke share link. Check rules.");
+  }
+}
+
+  
   async function copyShareLink(){
     if(!SHARE_TOKEN) return;
     const link = currentShareLink(SHARE_TOKEN);
