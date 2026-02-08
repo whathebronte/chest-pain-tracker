@@ -1,1946 +1,1600 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>Chest Pain Tracker</title>
-  <meta name="description" content="Track chest pain episodes, export summaries, and share a read-only report link." />
-
   <style>
     :root{
-      --bg:#0b0c10;
-      --text:#f3f4f6;
-      --muted:#a7acb8;
-      --line:#252a36;
-      --good:#1fda8a;
-      --warn:#ffcc66;
-      --bad:#ff6b6b;
+      --bg0:#05070b;
+      --bg1:#0b0f18;
+      --card: rgba(255,255,255,.06);
+      --card2: rgba(255,255,255,.08);
+      --stroke: rgba(255,255,255,.10);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.62);
+      --muted2: rgba(255,255,255,.45);
       --accent:#7aa2ff;
-      --shadow: 0 10px 30px rgba(0,0,0,.35);
-      --r:16px;
-      --pad2:22px;
-      --w: 980px;
-
-      /* Elder-friendly baseline */
-      --base: 16px;
-      --chip: 15px;
-      --h2: 18px;
-      --h3: 15px;
+      --accent2:#3ddc97;
+      --danger:#ff5d5d;
+      --warn:#ffd166;
+      --shadow: 0 16px 48px rgba(0,0,0,.55);
+      --radius: 18px;
+      --radius2: 14px;
+      --pad: 16px;
+      --font: -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     }
 
-    *{box-sizing:border-box}
-    body{
+    html,body{
+      height:100%;
       margin:0;
-      font-size: var(--base);
-      background:
-        radial-gradient(900px 600px at 30% -10%, rgba(122,162,255,.18), transparent 60%),
-        radial-gradient(900px 600px at 80% 10%, rgba(31,218,138,.12), transparent 60%),
-        var(--bg);
+      background: radial-gradient(1200px 800px at 20% 0%, rgba(122,162,255,.22), transparent 55%),
+                  radial-gradient(1200px 800px at 80% 0%, rgba(61,220,151,.18), transparent 55%),
+                  linear-gradient(180deg, var(--bg1), var(--bg0));
       color:var(--text);
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
-      line-height:1.35;
+      font-family:var(--font);
     }
 
-    .wrap{max-width:var(--w); margin:0 auto; padding:18px 14px 110px;}
+    /* Slightly larger, elder-friendly baseline */
+    body{ font-size: 17px; line-height: 1.25; }
+
+    .wrap{
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 14px 14px 90px;
+      box-sizing:border-box;
+    }
+
     .topbar{
-      position:sticky; top:0; z-index:20;
-      backdrop-filter: blur(10px);
-      background: rgba(11,12,16,.65);
-      border-bottom:1px solid rgba(37,42,54,.7);
-    }
-    .topbar-inner{max-width:var(--w); margin:0 auto; padding:12px 14px; display:flex; gap:10px; align-items:center;}
-    .brand{display:flex; gap:10px; align-items:center;}
-    .logo{
-      width:36px; height:36px; border-radius:12px;
-      background: linear-gradient(135deg, rgba(122,162,255,.9), rgba(31,218,138,.9));
-      box-shadow: var(--shadow);
-      flex:0 0 auto;
-    }
-    .title{display:flex; flex-direction:column}
-    .title b{font-size:16px; letter-spacing:.2px}
-    .title span{font-size:13px; color:var(--muted)}
-    .spacer{flex:1}
-    .nav-desktop{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
-
-    button{
-      appearance:none; border:1px solid var(--line);
-      background: rgba(18,20,27,.85);
-      color:var(--text);
-      padding:10px 12px;
-      border-radius:12px;
-      cursor:pointer;
-      transition:.12s transform, .12s background, .12s border-color;
-      font-weight:900;
-      font-size:14px;
-      white-space:nowrap;
-    }
-    button:hover{transform: translateY(-1px); border-color: rgba(122,162,255,.45)}
-    button:active{transform: translateY(0px)}
-    button.primary{
-      background: linear-gradient(135deg, rgba(122,162,255,.95), rgba(122,162,255,.65));
-      border-color: rgba(122,162,255,.8);
-      color:#071021;
-    }
-    button.ghost{background: transparent;}
-    button.danger{
-      background: rgba(255,107,107,.12);
-      border-color: rgba(255,107,107,.45);
-    }
-    button:disabled{
-      opacity:.55;
-      cursor:not-allowed;
-      transform:none !important;
-    }
-
-    .pill{
-      display:flex; align-items:center; gap:8px;
-      padding:7px 10px;
-      border:1px solid var(--line);
-      border-radius:999px;
-      background: rgba(18,20,27,.6);
-      font-size:12px;
-      color:var(--muted);
-      white-space:nowrap;
-    }
-    .dot{width:10px;height:10px;border-radius:999px;background:var(--muted)}
-    .pill.good .dot{background:var(--good)}
-    .pill.warn .dot{background:var(--warn)}
-    .pill.bad .dot{background:var(--bad)}
-    .pill span{color:var(--text); font-weight:900; font-size:12px}
-
-    .grid{
-      margin-top:16px;
-      display:grid;
-      grid-template-columns: 1.1fr .9fr;
-      gap:14px;
-    }
-    @media (max-width: 920px){ .grid{grid-template-columns:1fr} }
-
-    .card{
-      background: linear-gradient(180deg, rgba(18,20,27,.92), rgba(15,17,23,.92));
-      border:1px solid rgba(37,42,54,.9);
-      border-radius: var(--r);
-      box-shadow: var(--shadow);
-      padding: var(--pad2);
-    }
-
-    .section-title{
       display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      margin-bottom:10px;
-    }
-    .section-title h2{margin:0; font-size:var(--h2)}
-    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
-    .muted{color:var(--muted)}
-    .small{font-size:13px;color:var(--muted)}
-    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
-
-    .kpi{
-      display:grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap:10px;
-      margin-top:12px;
-    }
-    @media (max-width: 600px){ .kpi{grid-template-columns:1fr} }
-    .k{
-      border:1px solid rgba(37,42,54,.9);
-      background: rgba(18,20,27,.5);
-      border-radius:14px;
-      padding:12px;
-    }
-    .k b{display:block; font-size:20px}
-    .k span{font-size:13px; color:var(--muted); font-weight:800}
-
-    .banner{
-      margin-top:12px;
-      border-radius:14px;
-      border:1px solid rgba(255,204,102,.35);
-      background: rgba(255,204,102,.08);
-      padding:12px;
-      font-size:14px;
-    }
-    .banner b{display:block; margin-bottom:6px}
-
-    .subcard{
-      margin-top:12px;
-      padding:14px;
-      border-radius:14px;
-      border:1px solid rgba(37,42,54,.9);
-      background: rgba(18,20,27,.35);
-    }
-    .subcard h3{margin:0 0 10px 0; font-size:var(--h3)}
-
-    .view{display:none}
-    .view.active{display:block}
-
-    .list{display:flex; flex-direction:column; gap:10px; margin-top:10px;}
-    .item{
-      border:1px solid rgba(37,42,54,.9);
-      border-radius:14px;
-      background: rgba(18,20,27,.4);
-      padding:12px;
-      display:flex;
+      align-items:flex-start;
       justify-content:space-between;
       gap:12px;
+      padding: 10px 2px 16px;
+      position: sticky;
+      top: 0;
+      background: linear-gradient(180deg, rgba(11,15,24,.92), rgba(11,15,24,.55), transparent);
+      backdrop-filter: blur(10px);
+      z-index: 10;
     }
 
-    .table{
-      width:100%;
-      border-collapse: collapse;
-      margin-top:10px;
-      font-size:14px;
-    }
-    .table th, .table td{
-      border-bottom:1px solid rgba(37,42,54,.8);
-      padding:10px 8px;
-      text-align:left;
-      vertical-align:top;
-    }
-    .table th{color:var(--muted); font-size:12px; font-weight:900}
-
-    .tabbar{
-      position:fixed; left:0; right:0; bottom:0;
-      padding:10px 12px calc(10px + env(safe-area-inset-bottom));
-      background: rgba(11,12,16,.82);
-      border-top:1px solid rgba(37,42,54,.7);
-      backdrop-filter: blur(12px);
-      z-index:50;
-      display:none;
-    }
-    .tabbar-inner{
-      max-width:var(--w);
-      margin:0 auto;
-      display:grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap:8px;
+    .brand{
+      display:flex;
+      gap:12px;
       align-items:center;
+      min-width:0;
     }
-    .tabbtn{
-      padding:10px 10px;
-      border-radius:14px;
-      font-size:13px;
-      font-weight:900;
-      background: rgba(18,20,27,.55);
-      border:1px solid rgba(37,42,54,.9);
+    .logo{
+      width:44px;height:44px;border-radius:14px;
+      background: radial-gradient(120% 120% at 30% 20%, rgba(122,162,255,1), rgba(61,220,151,.8));
+      box-shadow: 0 10px 28px rgba(0,0,0,.45);
+      flex: 0 0 auto;
+    }
+    .brand h1{
+      font-size: 22px;
+      margin:0;
+      letter-spacing:.2px;
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+    }
+    .brand .sub{
+      margin-top:2px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .sync{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(0,0,0,.25);
+      border: 1px solid var(--stroke);
+      box-shadow: 0 10px 22px rgba(0,0,0,.35);
+      flex: 0 0 auto;
+    }
+    .dot{
+      width:10px;height:10px;border-radius:999px;
+      background: var(--accent2);
+      box-shadow: 0 0 0 6px rgba(61,220,151,.12);
+    }
+    .sync .label{
+      font-weight: 700;
+      letter-spacing:.2px;
+      font-size: 15px;
+      white-space: nowrap;
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.05));
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      padding: var(--pad);
+      box-shadow: var(--shadow);
+      margin: 12px 0;
+    }
+
+    .card h2{
+      margin: 0 0 10px;
+      font-size: 20px;
+    }
+
+    .row{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+
+    .btn{
+      appearance:none;
+      border: 1px solid var(--stroke);
+      background: rgba(0,0,0,.22);
       color: var(--text);
+      padding: 12px 14px;
+      border-radius: 14px;
+      font-weight: 700;
+      letter-spacing:.15px;
+      cursor:pointer;
+      user-select:none;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
     }
-    .tabbtn.active{border-color: rgba(122,162,255,.7); background: rgba(122,162,255,.12);}
-    .tabbtn.log{
-      background: linear-gradient(135deg, rgba(122,162,255,.95), rgba(122,162,255,.65));
-      border-color: rgba(122,162,255,.85);
-      color:#071021;
+    .btn:active{ transform: translateY(1px); }
+    .btn.primary{
+      background: linear-gradient(180deg, rgba(122,162,255,.95), rgba(122,162,255,.70));
+      border-color: rgba(122,162,255,.55);
+      color: rgba(0,0,0,.92);
     }
+    .btn.danger{
+      background: rgba(255,93,93,.12);
+      border-color: rgba(255,93,93,.35);
+      color: rgba(255,255,255,.92);
+    }
+    .btn.small{
+      padding: 10px 12px;
+      font-size: 14px;
+      border-radius: 12px;
+    }
+    .btn.full{ width:100%; padding: 16px 16px; font-size: 18px; border-radius: 16px; }
 
-    @media (max-width: 860px){
-      .nav-desktop{display:none;}
-      .tabbar{display:block;}
-      .wrap{padding-bottom: 130px;}
-    }
+    .muted{ color: var(--muted); }
+    .tiny{ font-size: 13px; color: var(--muted2); }
 
-    /* --- HOME Unique link: keep buttons on one line on mobile --- */
-    .uid-actions{
+    .tabs{
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+      background: linear-gradient(180deg, transparent, rgba(7,10,15,.7), rgba(7,10,15,.95));
+      backdrop-filter: blur(10px);
+      z-index: 50;
+    }
+    .tabbar{
+      max-width: 980px;
+      margin: 0 auto;
       display:flex;
       gap:10px;
-      flex-wrap:nowrap;      /* critical: no wrapping */
-      width:100%;
-      margin-top:12px;
+      align-items:center;
+      justify-content:space-between;
+      background: rgba(0,0,0,.25);
+      border: 1px solid var(--stroke);
+      border-radius: 18px;
+      padding: 8px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.55);
     }
-    .uid-actions button{
-      flex: 1 1 0;           /* allow shrink */
-      min-width: 0;          /* allow shrink */
-      padding: 9px 10px;     /* smaller */
-      font-size: 13px;       /* smaller */
-      border-radius: 13px;
+    .tab{
+      flex:1;
+      text-align:center;
+      padding: 12px 10px;
+      border-radius: 14px;
+      font-weight: 800;
+      border: 1px solid transparent;
+      color: rgba(255,255,255,.85);
+      background: transparent;
+      cursor:pointer;
+      user-select:none;
+      touch-action: manipulation;
     }
-    @media (max-width: 390px){
-      .uid-actions button{
-        padding: 8px 8px;
-        font-size: 12px;
-      }
+    .tab.active{
+      background: linear-gradient(180deg, rgba(122,162,255,.95), rgba(122,162,255,.70));
+      color: rgba(0,0,0,.92);
+      border-color: rgba(122,162,255,.55);
+    }
+
+    /* Chips */
+    .chipset{ display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+    .chip{
+      border: 1px solid var(--stroke);
+      background: rgba(0,0,0,.20);
+      padding: 12px 14px;
+      border-radius: 999px;
+      font-weight: 800;
+      cursor:pointer;
+      user-select:none;
+      touch-action: manipulation;
+    }
+    .chip.on{
+      background: rgba(61,220,151,.16);
+      border-color: rgba(61,220,151,.45);
+      box-shadow: 0 0 0 6px rgba(61,220,151,.08);
+    }
+
+    /* Inputs */
+    .field{ margin: 14px 0; }
+    label{ display:block; font-weight: 800; margin-bottom: 8px; color: rgba(255,255,255,.88); }
+    input[type="text"], input[type="number"], textarea, select{
+      width: 100%;
+      box-sizing: border-box;
+      background: rgba(0,0,0,.25);
+      border: 1px solid var(--stroke);
+      border-radius: 14px;
+      padding: 12px 12px;
+      color: var(--text);
+      font-size: 16px;
+      outline: none;
+    }
+    textarea{ min-height: 92px; resize: vertical; }
+
+    .divider{ height:1px; background: rgba(255,255,255,.10); margin: 14px 0; }
+
+    /* History list */
+    .list{ display:flex; flex-direction:column; gap:10px; }
+    .logcard{
+      background: rgba(0,0,0,.22);
+      border: 1px solid var(--stroke);
+      border-radius: 16px;
+      padding: 14px;
+      cursor:pointer;
+      user-select:none;
+      touch-action: manipulation;
+    }
+    .logcard:active{ transform: translateY(1px); }
+
+    .loghead{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:flex-start;
+    }
+    .logwhen{
+      font-weight: 900;
+      font-size: 18px;
+      letter-spacing:.2px;
+      white-space: nowrap; /* prevents AM/PM orphan */
+    }
+    .logmeta{
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing:.15px;
+      overflow:hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .logright{
+      text-align:right;
+      flex: 0 0 auto;
+      min-width: 92px;
+    }
+    .sev{
+      font-weight: 900;
+      font-size: 18px;
+      white-space: nowrap;
+    }
+    .dur{
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 800;
+      margin-top: 2px;
+      white-space: nowrap;
     }
 
     /* Modal */
-    .modal-backdrop{
-      position:fixed; inset:0;
+    .modal{
+      position: fixed;
+      inset: 0;
       background: rgba(0,0,0,.55);
       display:none;
       align-items:flex-end;
       justify-content:center;
-      z-index:60;
-      padding: 0 10px calc(10px + env(safe-area-inset-bottom));
+      z-index: 60;
+      padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
     }
-    .modal-backdrop.show{display:flex;}
+    .modal.on{ display:flex; }
     .sheet{
-      width: min(var(--w), 980px);
-      background: linear-gradient(180deg, rgba(18,20,27,.98), rgba(15,17,23,.98));
-      border:1px solid rgba(37,42,54,.95);
-      border-radius: 18px;
-      box-shadow: var(--shadow);
-      max-height: 88vh;
+      width: min(980px, 100%);
+      max-height: 92vh;
       overflow:auto;
-      padding: 14px 14px 12px;
-      position:relative;
+      border-radius: 22px;
+      background: linear-gradient(180deg, rgba(20,26,40,.96), rgba(10,14,22,.96));
+      border: 1px solid rgba(255,255,255,.14);
+      box-shadow: 0 24px 90px rgba(0,0,0,.75);
+      padding: 14px;
     }
-    .sheet-header{
-      display:flex; gap:10px; align-items:center; justify-content:space-between;
-      position: sticky; top:0;
-      padding: 10px 6px;
-      background: rgba(18,20,27,.92);
-      backdrop-filter: blur(8px);
-      border-bottom: 1px solid rgba(37,42,54,.65);
-      border-radius: 14px;
-      margin-bottom: 10px;
-      z-index:2;
-    }
-    .sheet-header b{font-size:16px}
-    .sheet-header .sub{font-size:13px;color:var(--muted); font-weight:800}
-    .sheet-actions{display:flex; gap:8px; align-items:center}
-
-    .form{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:14px;
-      padding: 6px;
-      padding-bottom: 76px;
-    }
-    @media (max-width: 820px){ .form{grid-template-columns:1fr} }
-
-    label{display:block; font-size:14px; color:var(--muted); margin-bottom:8px; font-weight:900}
-    input, select, textarea{
-      width:100%;
-      border:1px solid rgba(37,42,54,.9);
-      border-radius:12px;
-      background: rgba(11,12,16,.55);
-      color:var(--text);
-      padding:10px 11px;
-      font-size:16px;
-      outline:none;
-    }
-    textarea{min-height:86px; resize:vertical}
-    input:focus, select:focus, textarea:focus{border-color: rgba(122,162,255,.65)}
-    .help{font-size:13px; color:var(--muted); margin-top:6px; font-weight:800}
-
-    .chips{display:flex; flex-wrap:wrap; gap:10px;}
-    .chip{
-      border:1px solid rgba(37,42,54,.9);
-      background: rgba(18,20,27,.55);
-      color: var(--text);
-      padding:10px 14px;
-      border-radius:999px;
-      font-size: var(--chip);
-      cursor:pointer;
-      user-select:none;
-      transition:.12s transform, .12s border-color, .12s background;
-      font-weight:900;
-    }
-    .chip:hover{transform:translateY(-1px); border-color: rgba(122,162,255,.45)}
-    .chip.selected{
-      border-color: rgba(31,218,138,.7);
-      background: rgba(31,218,138,.12);
-    }
-
-    .panel{
-      padding: 12px;
-      border-radius: 14px;
-      border: 1px solid rgba(37,42,54,.85);
-      background: rgba(18,20,27,.22);
-    }
-
-    .sheet-footer{
+    .sheet h3{ margin: 8px 2px 12px; font-size: 20px; }
+    .sheet .actions{
+      display:flex;
+      gap:10px;
       position: sticky;
       bottom: 0;
-      z-index: 3;
-      background: rgba(18,20,27,.96);
-      border-top: 1px solid rgba(37,42,54,.75);
-      backdrop-filter: blur(10px);
-      padding: 10px 10px;
-      border-radius: 14px;
-      margin: 0 6px 6px;
-      display:flex;
-      gap:8px;
-      justify-content:space-between;
-      align-items:center;
+      padding: 12px 0 0;
+      background: linear-gradient(180deg, transparent, rgba(10,14,22,.92) 25%, rgba(10,14,22,.98));
     }
-    .footer-left, .footer-right{display:flex; gap:8px; align-items:center}
+    .sheet .actions .btn{ flex:1; }
 
+    /* Severity slider thicker */
     input[type="range"]{
-      height: 38px;
+      width:100%;
+      height: 18px;
       background: transparent;
-      padding: 0;
-      border: 0;
+      margin: 10px 0 4px;
     }
     input[type="range"]::-webkit-slider-runnable-track{
-      height: 14px;
+      height: 12px;
       border-radius: 999px;
-      background: rgba(122,162,255,.22);
-      border: 1px solid rgba(122,162,255,.25);
+      background: rgba(255,255,255,.18);
+      border: 1px solid rgba(255,255,255,.18);
     }
     input[type="range"]::-webkit-slider-thumb{
       -webkit-appearance: none;
-      width: 30px;
-      height: 30px;
+      appearance:none;
+      width: 28px; height: 28px;
       border-radius: 999px;
+      background: linear-gradient(180deg, rgba(122,162,255,.98), rgba(122,162,255,.65));
+      border: 1px solid rgba(255,255,255,.22);
       margin-top: -9px;
-      background: rgba(122,162,255,.95);
-      border: 2px solid rgba(255,255,255,.55);
-      box-shadow: 0 8px 18px rgba(0,0,0,.35);
-    }
-    input[type="range"]::-moz-range-track{
-      height: 14px;
-      border-radius: 999px;
-      background: rgba(122,162,255,.22);
-      border: 1px solid rgba(122,162,255,.25);
-    }
-    input[type="range"]::-moz-range-thumb{
-      width: 30px;
-      height: 30px;
-      border-radius: 999px;
-      background: rgba(122,162,255,.95);
-      border: 2px solid rgba(255,255,255,.55);
-      box-shadow: 0 8px 18px rgba(0,0,0,.35);
+      box-shadow: 0 10px 26px rgba(0,0,0,.55);
     }
 
-    @media print{
-      body{background:#fff;color:#111}
-      .topbar, .tabbar, .no-print, .modal-backdrop{display:none !important}
-      .wrap{max-width:100%;padding:0}
-      .card{box-shadow:none;border:0;border-radius:0;background:#fff;padding:0}
-      .subcard{border:1px solid #ddd;background:#fff}
-      .table th, .table td{border-bottom:1px solid #ddd}
-      .muted, .small{color:#444}
+    /* Pain type guide text hierarchy */
+    .guideTitle{ font-weight: 900; margin: 8px 0 6px; }
+    .guideText{ font-size: 14px; color: var(--muted); }
+
+    @media (min-width: 740px){
+      body{ font-size: 18px; }
+      .brand h1{ font-size: 24px; }
     }
   </style>
 </head>
-
 <body>
-  <div class="topbar no-print">
-    <div class="topbar-inner">
-      <div class="brand">
-        <div class="logo" aria-hidden="true"></div>
-        <div class="title">
-          <b>Chest Pain Tracker</b>
-          <span>Log episodes • Share reports</span>
-        </div>
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo"></div>
+      <div style="min-width:0">
+        <h1>Chest Pain Tracker</h1>
+        <div class="sub">Log episodes · Share reports</div>
       </div>
-
-      <div class="spacer"></div>
-
-      <div class="nav-desktop">
-        <button id="navHome" class="ghost">Home</button>
-        <button id="navLog" class="primary">Log</button>
-        <button id="navHistory">History</button>
-        <button id="navExport">Export</button>
-      </div>
-
-      <div id="syncPill" class="pill warn" title="Sync status">
-        <div class="dot"></div>
-        <span id="syncText">Starting…</span>
-      </div>
+    </div>
+    <div class="sync" id="syncPill" aria-live="polite">
+      <div class="dot" id="syncDot"></div>
+      <div class="label" id="syncLabel">Starting…</div>
     </div>
   </div>
 
   <div class="wrap">
     <!-- HOME -->
-    <div id="viewHome" class="view active">
-      <div class="grid">
-        <div class="card">
-          <div class="section-title">
-            <h2>Home</h2>
-          </div>
+    <section id="viewHome" class="card">
+      <h2>Home</h2>
+      <button class="btn primary full" id="btnLogNow">Log Chest Pain</button>
 
-          <div class="row">
-            <button class="primary" id="homeLogNow" style="width:100%; padding:16px 16px; font-size:16px; border-radius:16px;">
-              Log Chest Pain
-            </button>
-          </div>
+      <div class="divider"></div>
 
-          <div id="resumeDraftBox" class="subcard" style="display:none;">
-            <h3>Resume draft</h3>
-            <div class="muted" id="draftSummary"></div>
-            <div class="row" style="margin-top:10px;">
-              <button class="primary" id="resumeDraftBtn">Resume</button>
-              <button class="danger" id="discardDraftBtn">Discard</button>
-            </div>
-          </div>
-
-          <div class="banner">
-            <b>Safety note</b>
-            If chest pain is severe, new, or with trouble breathing, fainting, heavy sweating, or worsening symptoms, seek urgent medical care.
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="section-title"><h2>At a glance</h2></div>
-
-          <div class="kpi">
-            <div class="k"><b id="kpi7d">0</b><span>Episodes (last 7 days)</span></div>
-            <div class="k"><b id="kpi30d">0</b><span>Episodes (last 30 days)</span></div>
-            <div class="k"><b id="kpiLast">—</b><span>Last severity</span></div>
-          </div>
-
-          <div class="subcard">
-            <h3>Most common onset activity (30 days)</h3>
-            <div class="muted" id="kpiCommonActivity">—</div>
-          </div>
-
-          <!-- Unique link at bottom -->
-          <div class="subcard no-print" style="margin-top:16px;">
-            <div style="font-weight:900;">Your unique link</div>
-            <div class="small muted" style="margin-top:2px;">ID: <span id="uidShort2" class="mono">—</span></div>
-
-            <div class="uid-actions">
-              <button id="copyUidLinkBtn2" class="primary">Copy link</button>
-              <button id="loadUidBtn" class="ghost">Load ID</button>
-              <button id="toggleUidLink" class="ghost">Show link</button>
-            </div>
-
-            <div id="uidLinkBoxWrap" style="display:none; margin-top:10px;">
-              <div id="uidLinkBox" class="small mono" style="word-break:break-all;"></div>
-            </div>
+      <h2 style="margin-top:0">At a glance</h2>
+      <div class="card" style="box-shadow:none;margin:10px 0;background:rgba(0,0,0,.18)">
+        <div class="row" style="justify-content:space-between">
+          <div>
+            <div style="font-size:34px;font-weight:1000" id="glance7">0</div>
+            <div class="muted" style="font-weight:800">Episodes (last 7 days)</div>
           </div>
         </div>
       </div>
-    </div>
+
+      <div class="card" style="box-shadow:none;margin:10px 0;background:rgba(0,0,0,.18)">
+        <div style="font-size:34px;font-weight:1000" id="glance30">0</div>
+        <div class="muted" style="font-weight:800">Episodes (last 30 days)</div>
+      </div>
+
+      <div class="card" style="box-shadow:none;margin:10px 0;background:rgba(0,0,0,.18)">
+        <div style="font-size:28px;font-weight:1000" id="glanceLastSev">—</div>
+        <div class="muted" style="font-weight:800">Last severity</div>
+      </div>
+
+      <div class="card" style="box-shadow:none;margin:10px 0;background:rgba(0,0,0,.18)">
+        <div style="font-size:18px;font-weight:1000" id="glanceCommonActivity">—</div>
+        <div class="muted" style="font-weight:800">Most common onset activity (30 days)</div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Unique link block at bottom, compact -->
+      <div class="card" style="box-shadow:none;margin:10px 0;background:rgba(0,0,0,.18)">
+        <div class="row" style="justify-content:space-between;align-items:flex-start">
+          <div style="min-width:0">
+            <div style="font-weight:1000;font-size:18px">Your unique link</div>
+            <div class="tiny">ID: <span id="uidShort">—</span></div>
+          </div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn small primary" id="btnCopyLink">Copy link</button>
+          <button class="btn small" id="btnLoadExisting">Load existing</button>
+          <button class="btn small" id="btnShowLink">Show link</button>
+        </div>
+      </div>
+    </section>
 
     <!-- HISTORY -->
-    <div id="viewHistory" class="view">
-      <div class="card">
-        <div class="section-title">
-          <h2>History</h2>
-          <div class="row no-print" style="justify-content:flex-end;">
-            <select id="historyRange">
-              <option value="7" selected>Last 7 days</option>
-              <option value="30">Last 30 days</option>
-              <option value="90">Last 90 days</option>
-              <option value="365">Last 12 months</option>
-              <option value="all">All time</option>
-            </select>
-            <select id="historySeverity">
-              <option value="all" selected>All severities</option>
-              <option value="7+">7–10</option>
-              <option value="4+">4–10</option>
-              <option value="0-3">0–3</option>
-            </select>
-          </div>
+    <section id="viewHistory" class="card" style="display:none">
+      <div class="row" style="justify-content:space-between;align-items:flex-end">
+        <div>
+          <h2 style="margin:0 0 8px">History</h2>
+          <div class="muted" style="font-weight:700">Most recent first.</div>
         </div>
-
-        <div class="small muted">Most recent first.</div>
-        <div id="historyList" class="list"></div>
+        <div class="row" style="gap:8px">
+          <select id="histRange" class="btn" style="padding:10px 12px;border-radius:14px">
+            <option value="7" selected>Last 7 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="90">Last 90 days</option>
+            <option value="365">Last year</option>
+            <option value="all">All time</option>
+          </select>
+          <select id="histSev" class="btn" style="padding:10px 12px;border-radius:14px">
+            <option value="all" selected>All severities</option>
+            <option value="mild">Mild (1–3)</option>
+            <option value="mod">Moderate (4–6)</option>
+            <option value="sev">Severe (7–10)</option>
+          </select>
+        </div>
       </div>
-    </div>
+
+      <div class="divider"></div>
+      <div id="histList" class="list"></div>
+      <div id="histEmpty" class="muted" style="display:none;font-weight:700;padding:10px 2px">No logs in this range.</div>
+    </section>
 
     <!-- EXPORT -->
-    <div id="viewExport" class="view">
-      <div class="card">
-        <div class="section-title">
-          <h2>Export</h2>
-          <div class="row no-print" style="justify-content:flex-end;">
-            <select id="exportRange">
-              <option value="7">Last 7 days</option>
-              <option value="30" selected>Last 30 days</option>
-              <option value="90">Last 90 days</option>
-              <option value="365">Last 12 months</option>
-              <option value="all">All time</option>
-            </select>
-            <button id="refreshReportBtn">Refresh</button>
-          </div>
-        </div>
-
-        <div class="subcard no-print">
-          <h3>Clinician summary (Print to PDF)</h3>
-          <div class="row" style="margin-top:10px;">
-            <button class="primary" id="printBtn">Print / Save PDF</button>
-            <button id="downloadCsvBtn">Download CSV</button>
-          </div>
-        </div>
-
-        <div class="subcard no-print">
-          <h3>Share a read-only report link</h3>
-          <div class="small muted">One active link only. No expiry. Revocable anytime.</div>
-          <div class="row" style="margin-top:10px;">
-            <button class="primary" id="createShareBtn">Create / Replace share link</button>
-            <button id="copyShareBtn" style="display:none;">Copy share link</button>
-            <button id="revokeShareBtn" class="danger" style="display:none;">Revoke share link</button>
-          </div>
-          <div id="shareLinkBox" class="small mono" style="display:none; margin-top:10px; word-break:break-all;"></div>
-        </div>
-
-        <div id="reportArea" style="margin-top:22px;">
-          <div class="section-title" style="margin-top:10px;">
-            <h2 style="margin-top:6px;">Chest pain report</h2>
-            <div class="small">Generated: <span id="reportGeneratedAt">—</span></div>
-          </div>
-
-          <div class="subcard">
-            <h3>Summary</h3>
-            <div id="reportSummary" class="muted"></div>
-          </div>
-
-          <div class="subcard">
-            <h3>Episodes</h3>
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>Date/Time</th><th>Severity</th><th>Duration</th><th>Activity</th>
-                  <th>Type/Location</th><th>Symptoms</th><th>Relief</th><th>Notes</th>
-                </tr>
-              </thead>
-              <tbody id="reportTbody"></tbody>
-            </table>
-          </div>
-
-          <div class="subcard no-print">
-            <h3>Advanced</h3>
-            <div class="row" style="margin-top:10px;">
-              <button id="exportAllCsvBtn">Download ALL data (CSV)</button>
-              <button id="clearAllBtn" class="danger">Clear ALL data (device + Firebase)</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- SHARE VIEW -->
-    <div id="viewShare" class="view">
-      <div class="card">
-        <div class="section-title">
-          <h2>Shared chest pain report</h2>
-          <div class="small">Read-only</div>
-        </div>
-
-        <div class="subcard no-print">
-          <div class="row">
-            <button class="primary" id="sharePrintBtn">Print / Save PDF</button>
-            <button id="shareDownloadCsvBtn">Download CSV</button>
-          </div>
-        </div>
-
-        <div class="section-title">
-          <h2>Report</h2>
-          <div class="small">Generated: <span id="shareGeneratedAt">—</span></div>
-        </div>
-
-        <div class="subcard">
-          <h3>Summary</h3>
-          <div id="shareSummary" class="muted"></div>
-        </div>
-
-        <div class="subcard">
-          <h3>Episodes</h3>
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Date/Time</th><th>Severity</th><th>Duration</th><th>Activity</th>
-                <th>Type/Location</th><th>Symptoms</th><th>Relief</th><th>Notes</th>
-              </tr>
-            </thead>
-            <tbody id="shareTbody"></tbody>
-          </table>
-
-          <div id="shareError" class="banner" style="display:none; border-color: rgba(255,107,107,.4); background: rgba(255,107,107,.10);">
-            <b>Could not load shared report</b>
-            <div class="small">The link may be invalid or revoked.</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Mobile bottom tab bar (Home -> Log -> History -> Export) -->
-  <div class="tabbar no-print" id="tabbar">
-    <div class="tabbar-inner">
-      <button class="tabbtn" id="tabHome">Home</button>
-      <button class="tabbtn log" id="tabLog">Log</button>
-      <button class="tabbtn" id="tabHistory">History</button>
-      <button class="tabbtn" id="tabExport">Export</button>
-    </div>
-  </div>
-
-  <!-- Log sheet modal -->
-  <div class="modal-backdrop no-print" id="logModal">
-    <div class="sheet" role="dialog" aria-modal="true" aria-label="Log chest pain">
-      <div class="sheet-header">
+    <section id="viewExport" class="card" style="display:none">
+      <div class="row" style="justify-content:space-between;align-items:flex-end">
         <div>
-          <b id="sheetTitle">Log an episode</b>
-          <div class="sub" id="sheetSub">Draft saves automatically while you type.</div>
+          <h2 style="margin:0 0 8px">Export</h2>
         </div>
-        <div class="sheet-actions">
-          <button id="closeSheet" class="ghost">Close</button>
-          <button id="discardDraftBtnHeader" class="danger">Discard</button>
-        </div>
-      </div>
-
-      <div class="form">
-        <div>
-          <label>Start time</label>
-          <input id="startAt" type="datetime-local" />
-        </div>
-
-        <div>
-          <label>Ongoing?</label>
-          <select id="ongoing">
-            <option value="true">Yes (still happening)</option>
-            <option value="false">No (ended)</option>
+        <div class="row" style="gap:8px">
+          <select id="expRange" class="btn" style="padding:10px 12px;border-radius:14px">
+            <option value="7">Last 7 days</option>
+            <option value="30" selected>Last 30 days</option>
+            <option value="90">Last 90 days</option>
+            <option value="365">Last year</option>
+            <option value="all">All time</option>
           </select>
-
-          <div id="endAtWrap" style="display:none; margin-top:10px;">
-            <label>End time</label>
-            <input id="endAt" type="datetime-local" />
-            <div class="help">Or choose duration:</div>
-            <div id="durationChips" class="chips"></div>
-          </div>
+          <button class="btn" id="btnRefreshExport">Refresh</button>
         </div>
+      </div>
 
-        <div>
-          <label>Severity (0–10)</label>
-          <input id="severity" type="range" min="0" max="10" step="1" />
-          <div class="help">Selected: <b id="severityVal">5</b></div>
+      <div class="divider"></div>
+
+      <div class="card" style="box-shadow:none;margin:10px 0;background:rgba(0,0,0,.18)">
+        <div style="font-weight:1000;font-size:18px;margin-bottom:10px">Clinician summary (Print to PDF)</div>
+        <div class="row">
+          <button class="btn primary" id="btnPrint">Print / Save PDF</button>
+          <button class="btn" id="btnCSV">Download CSV</button>
         </div>
+      </div>
 
-        <div class="panel">
-          <label>Pain type</label>
-          <div id="painTypeChips" class="chips"></div>
-
-          <div id="painTypeHelpBox" class="subcard" style="margin-top:10px;">
-            <h3 style="margin-bottom:6px;">Pain type guide</h3>
-            <div class="muted" id="painTypeHelpText" style="font-size:12px; line-height:1.35;">
-              Tap a pain type to see a quick guide.
-            </div>
-          </div>
-
-          <div id="painTypeOtherWrap" style="display:none; margin-top:10px;">
-            <label>Describe “Other”</label>
-            <input id="painTypeOtherText" type="text" maxlength="80" placeholder="e.g., stabbing, prickly, etc." />
-            <div class="help"><span id="painTypeOtherCount">0</span>/80</div>
-          </div>
+      <div class="card" style="box-shadow:none;margin:10px 0;background:rgba(0,0,0,.18)">
+        <div class="row" style="justify-content:space-between;align-items:center">
+          <div style="font-weight:1000;font-size:18px">Share a read-only report link</div>
+          <button class="btn" id="btnCreateShare">Create / Replace share link</button>
         </div>
-
-        <div class="panel">
-          <label>Location</label>
-          <div id="locationChips" class="chips"></div>
+        <div class="tiny" style="margin-top:6px">One active link only. No expiry. Revocable anytime.</div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn small" id="btnCopyShare" disabled>Copy share link</button>
+          <button class="btn small danger" id="btnRevokeShare" disabled>Revoke</button>
         </div>
+      </div>
 
-        <div class="panel">
-          <label>Activity at onset</label>
-          <div id="activityChips" class="chips"></div>
-        </div>
+      <div class="divider"></div>
 
-        <div class="panel">
-          <label>Relief</label>
-          <div id="reliefChips" class="chips"></div>
-        </div>
-
-        <div class="panel" style="grid-column:1/-1;">
-          <label>Associated symptoms</label>
-          <div id="symptomChips" class="chips"></div>
-          <div class="help">Tip: choose “None” if there were no other symptoms.</div>
-        </div>
-
-        <div style="grid-column: 1 / -1;">
-          <label>Notes (optional)</label>
-          <textarea id="notes" maxlength="500" placeholder=""></textarea>
-          <div class="help"><span id="notesCount">0</span>/500</div>
-        </div>
-
-        <div style="grid-column: 1 / -1;" class="no-print">
-          <button id="saveSheetInline" class="primary" style="width:100%; padding:16px 16px; font-size:16px; border-radius:16px;">
-            Save log
-          </button>
-        </div>
-
-        <div style="grid-column: 1 / -1;">
-          <div class="subcard">
-            <h3>Optional vitals</h3>
-            <div class="form" style="padding:0; padding-bottom:0;">
-              <div><label>Heart rate (bpm)</label><input id="v_hr" type="number" inputmode="numeric" placeholder="e.g. 92" /></div>
-              <div><label>SpO₂ (%)</label><input id="v_spo2" type="number" inputmode="numeric" placeholder="e.g. 98" /></div>
-              <div><label>BP systolic</label><input id="v_bpsys" type="number" inputmode="numeric" placeholder="e.g. 130" /></div>
-              <div><label>BP diastolic</label><input id="v_bpdia" type="number" inputmode="numeric" placeholder="e.g. 80" /></div>
-            </div>
+      <!-- spacing fix: report title needs breathing room -->
+      <div style="margin-top:18px">
+        <div class="row" style="justify-content:space-between;align-items:flex-end">
+          <div>
+            <div style="font-weight:1000;font-size:20px">Chest pain report</div>
+            <div class="tiny">Generated: <span id="reportGen">—</span></div>
           </div>
         </div>
       </div>
 
-      <div class="sheet-footer">
-        <div class="footer-left">
-          <button id="discardDraftBtnFooter" class="danger">Discard</button>
-          <button id="closeSheetFooter" class="ghost">Close</button>
+      <div class="card" style="box-shadow:none;margin:12px 0;background:rgba(0,0,0,.18)">
+        <div style="font-weight:1000;font-size:18px;margin-bottom:8px">Summary</div>
+        <div class="muted" style="font-weight:700" id="reportSummary">—</div>
+      </div>
+
+      <div class="card" style="box-shadow:none;margin:12px 0;background:rgba(0,0,0,.18)">
+        <div style="font-weight:1000;font-size:18px;margin-bottom:8px">Episodes</div>
+        <div id="reportEpisodes" class="muted" style="font-weight:700">—</div>
+      </div>
+    </section>
+  </div>
+
+  <!-- LOG / EDIT SHEET -->
+  <div class="modal" id="logModal" role="dialog" aria-modal="true">
+    <div class="sheet">
+      <div class="row" style="justify-content:space-between;align-items:flex-start">
+        <div>
+          <h3 id="logTitle" style="margin:8px 0 2px">Log an episode</h3>
+          <div class="tiny" id="logModeHint">Draft saves automatically while you type.</div>
         </div>
-        <div class="footer-right">
-          <button id="saveSheet" class="primary">Save log</button>
+        <div class="row" style="gap:10px">
+          <button class="btn" id="btnCloseTop">Close</button>
+          <button class="btn danger" id="btnDiscardTop">Discard</button>
         </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="field">
+        <label>Date/time</label>
+        <input type="text" id="fWhen" placeholder="Auto" disabled>
+      </div>
+
+      <div class="field">
+        <label>Severity (0–10): <span id="sevVal" style="font-weight:1000">5</span></label>
+        <input type="range" id="fSev" min="0" max="10" step="1" value="5">
+      </div>
+
+      <div class="field">
+        <label>Duration</label>
+        <div class="chipset" id="durChips"></div>
+      </div>
+
+      <div class="field">
+        <label>Pain type</label>
+        <div class="chipset" id="typeChips"></div>
+        <div id="typeOtherWrap" class="field" style="display:none">
+          <label>Other pain type</label>
+          <input type="text" id="fTypeOther" placeholder="Describe briefly">
+        </div>
+        <div style="margin-top:10px">
+          <div class="guideTitle">Pain type guide</div>
+          <div class="guideText" id="typeGuideText">Tap a pain type to see a short guide.</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Location</label>
+        <div class="chipset" id="locChips"></div>
+        <div id="locOtherWrap" class="field" style="display:none">
+          <label>Other location</label>
+          <input type="text" id="fLocOther" placeholder="e.g., lower chest">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Activity at onset</label>
+        <div class="chipset" id="actChips"></div>
+        <div id="actOtherWrap" class="field" style="display:none">
+          <label>Other activity</label>
+          <input type="text" id="fActOther" placeholder="Describe">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Relief</label>
+        <div class="chipset" id="relChips"></div>
+        <div id="relOtherWrap" class="field" style="display:none">
+          <label>Other relief</label>
+          <input type="text" id="fRelOther" placeholder="Describe">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Associated symptoms</label>
+        <div class="chipset" id="symChips"></div>
+        <div class="tiny" style="margin-top:8px">Tip: choose “None” if there were no other symptoms.</div>
+      </div>
+
+      <div class="field">
+        <label>Notes</label>
+        <textarea id="fNotes" placeholder=""></textarea>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Big save button before optional vitals (static) -->
+      <button class="btn primary full" id="btnSavePrimary">Save log</button>
+
+      <div class="divider"></div>
+
+      <div class="field">
+        <label>Optional vitals</label>
+        <div class="row">
+          <input type="number" id="fHR" placeholder="Heart rate (bpm)" inputmode="numeric">
+          <input type="number" id="fBPsys" placeholder="BP systolic" inputmode="numeric">
+          <input type="number" id="fBPdia" placeholder="BP diastolic" inputmode="numeric">
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn danger" id="btnDiscard">Discard</button>
+        <button class="btn" id="btnClose">Close</button>
+        <button class="btn primary" id="btnSave">Save log</button>
+      </div>
+
+      <div class="tiny" style="margin-top:10px">
+        In an emergency (severe, new, trouble breathing, fainting, heavy sweating, worsening), seek urgent medical care.
       </div>
     </div>
   </div>
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-  import {
-    getFirestore,
-    doc, setDoc, getDoc, deleteDoc,
-    collection, query, orderBy, getDocs, onSnapshot,
-    serverTimestamp
-  } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+  <!-- Show link modal (simple) -->
+  <div class="modal" id="linkModal">
+    <div class="sheet">
+      <h3 style="margin:8px 2px 10px">Your unique link</h3>
+      <div class="tiny" style="margin-bottom:8px">Save this link to return to the same logs on any device/browser.</div>
+      <textarea id="linkText" readonly style="min-height:120px"></textarea>
+      <div class="row" style="margin-top:12px">
+        <button class="btn primary" id="btnCopyLink2">Copy link</button>
+        <button class="btn" id="btnCloseLinkModal">Close</button>
+      </div>
+    </div>
+  </div>
 
-  // ---- Firebase config (client config is expected to be public) ----
-  const firebaseConfig = {
-    apiKey: "AIzaSyAY9or2wznVWfjmcA7t8zmvP4tij4GV0Vc",
-    authDomain: "chest-pain-tracker.firebaseapp.com",
-    projectId: "chest-pain-tracker",
-    storageBucket: "chest-pain-tracker.firebasestorage.app",
-    messagingSenderId: "695419264328",
-    appId: "1:695419264328:web:279b5091674d4497c1a77d"
-  };
+  <script type="module">
+    // Firebase (modular CDN)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import {
+      getFirestore, doc, collection, query, orderBy, limit, where,
+      getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
-  // ---- App state ----
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-
-  const $ = (id) => document.getElementById(id);
-
-  // SAFE binding: prevents one missing element from crashing the entire app
-  function bindClick(id, handler){
-    const el = $(id);
-    if(!el){
-      console.warn("Missing element for bindClick:", id);
-      return;
-    }
-    el.addEventListener("click", (e)=>handler(e));
-  }
-  function bindChange(id, handler){
-    const el = $(id);
-    if(!el){
-      console.warn("Missing element for bindChange:", id);
-      return;
-    }
-    el.addEventListener("change", (e)=>handler(e));
-  }
-  function bindInput(id, handler){
-    const el = $(id);
-    if(!el){
-      console.warn("Missing element for bindInput:", id);
-      return;
-    }
-    el.addEventListener("input", (e)=>handler(e));
-  }
-
-  const PAIN_TYPE_HELP = {
-    "Pressure": "Heaviness, squeezing, or a weight on the chest. Often described as a “tight band.”",
-    "Tightness": "Constricted feeling, like the chest is being held or compressed.",
-    "Sharp": "Stabbing / needle-like pain. Often localized.",
-    "Burning": "Hot / heartburn-like sensation (can be reflux, but still log it).",
-    "Ache": "Dull soreness or lingering discomfort.",
-    "Other": "Use if none of the above fit. Describe it in your own words."
-  };
-
-  const ENUMS = {
-    painType: ["Pressure","Tightness","Sharp","Burning","Ache","Other"],
-    location: ["Center","Left","Right","Upper abdomen","Other"],
-    activity: ["Rest","Walking","Stairs","Exercise","After meal","Stress","Sleeping","Other"],
-    relief: ["Rest","Breathing","Antacid","Nitro","Painkiller","None","Other"],
-    symptoms: ["Shortness of breath","Sweating","Nausea","Dizziness","Palpitations","Radiation (arm/jaw/back)","None"],
-    durationMins: [1,5,10,20,30,60,120]
-  };
-
-  let VAULT_ID = null;
-  let EPISODES = [];
-  let DRAFT = null;
-  let SHARE_TOKEN = null;
-
-  let draftTimer = null;
-  let unsubEpisodes = null;
-  let unsubDraft = null;
-  let unsubShare = null;
-
-  const state = {
-    painType: "Pressure",
-    location: "Center",
-    activity: "Rest",
-    relief: "None",
-    symptoms: ["None"],
-    durationMins: null,
-  };
-
-  // ---- Sync status pill ----
-  function setSync(status){
-    const pill = $("syncPill");
-    const text = $("syncText");
-    if(!pill || !text) return;
-    pill.classList.remove("good","warn","bad");
-    let cls = "warn";
-    if(status === "Synced") cls = "good";
-    if(String(status).startsWith("Sync error")) cls = "bad";
-    pill.classList.add(cls);
-    text.textContent = status;
-  }
-
-  // ---- Routing / views ----
-  function setView(name){
-    ["Home","History","Export","Share"].forEach(v=>{
-      const el = $("view"+v);
-      if(el) el.classList.toggle("active", v.toLowerCase() === name.toLowerCase());
-    });
-    const tabHome = $("tabHome"), tabHistory = $("tabHistory"), tabExport = $("tabExport");
-    if(tabHome) tabHome.classList.toggle("active", name==="Home");
-    if(tabHistory) tabHistory.classList.toggle("active", name==="History");
-    if(tabExport) tabExport.classList.toggle("active", name==="Export");
-  }
-
-  function showModal(){
-    const m = $("logModal");
-    if(!m) return;
-    m.classList.add("show");
-    document.body.style.overflow = "hidden";
-  }
-  function hideModal(){
-    const m = $("logModal");
-    if(!m) return;
-    m.classList.remove("show");
-    document.body.style.overflow = "";
-  }
-
-  // ---- UID / vault id ----
-  function longRandomId(){
-    return (crypto.randomUUID().replaceAll("-","") + crypto.randomUUID().replaceAll("-",""));
-  }
-
-  function getUidFromUrl(){
-    const u = new URL(location.href);
-    const q = u.searchParams.get("uid");
-    return (q && q.trim()) ? q.trim() : null;
-  }
-  function getShareFromUrl(){
-    const u = new URL(location.href);
-    const s = u.searchParams.get("share");
-    return (s && s.trim()) ? s.trim() : null;
-  }
-
-  function setUidInUrl(uid){
-    const u = new URL(location.href);
-    u.searchParams.set("uid", uid);
-    u.searchParams.delete("share");
-    history.replaceState(null, "", u.toString());
-  }
-
-  function currentVaultLink(){
-    const u = new URL(location.origin + location.pathname);
-    u.searchParams.set("uid", VAULT_ID);
-    return u.toString();
-  }
-  function currentShareLink(token){
-    const u = new URL(location.origin + location.pathname);
-    u.searchParams.set("share", token);
-    return u.toString();
-  }
-
-  function applyVaultToUI(){
-    const short = VAULT_ID ? VAULT_ID.slice(0, 8) : "—";
-    if($("uidShort2")) $("uidShort2").textContent = short;
-    if($("uidLinkBox")) $("uidLinkBox").textContent = VAULT_ID ? currentVaultLink() : "—";
-  }
-
-  async function ensureVaultId(){
-    const fromUrl = getUidFromUrl();
-    if(fromUrl){
-      VAULT_ID = fromUrl;
-      localStorage.setItem("cpt_vault_id", VAULT_ID);
-      setUidInUrl(VAULT_ID);
-      applyVaultToUI();
-      return;
-    }
-
-    const fromLocal = (localStorage.getItem("cpt_vault_id") || "").trim();
-    if(fromLocal){
-      VAULT_ID = fromLocal;
-      setUidInUrl(VAULT_ID);
-      applyVaultToUI();
-      return;
-    }
-
-    VAULT_ID = longRandomId();
-    localStorage.setItem("cpt_vault_id", VAULT_ID);
-    setUidInUrl(VAULT_ID);
-    applyVaultToUI();
-  }
-
-  async function copyUidLink(){
-    if(!VAULT_ID) return;
-    const link = currentVaultLink();
-    try{
-      await navigator.clipboard.writeText(link);
-      alert("Link copied.");
-    }catch{
-      prompt("Copy this link:", link);
-    }
-  }
-
-  async function loadExistingUid(){
-    const input = prompt("Paste a full link (uid=...) or paste just the ID:");
-    if(!input) return;
-
-    let uid = input.trim();
-    try{
-      if(uid.includes("http")){
-        const u = new URL(uid);
-        uid = (u.searchParams.get("uid") || "").trim();
-      }
-    }catch(e){}
-
-    if(!uid){
-      alert("Could not find an ID in what you pasted.");
-      return;
-    }
-
-    VAULT_ID = uid;
-    localStorage.setItem("cpt_vault_id", VAULT_ID);
-    setUidInUrl(VAULT_ID);
-    applyVaultToUI();
-
-    await startListeners();
-    setView("Home");
-    alert("Loaded. If data exists for that ID, it will appear.");
-  }
-
-  // ---- Date helpers ----
-  function nowLocal(){
-    const d = new Date();
-    const pad = (n)=>String(n).padStart(2,"0");
-    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  }
-  function parseDTLocal(val){
-    if(!val) return null;
-    const d = new Date(val);
-    return isNaN(d.getTime()) ? null : d;
-  }
-  function fmtDateTime(d){
-    const dt = (d instanceof Date) ? d : new Date(d);
-    if(isNaN(dt.getTime())) return "—";
-    return dt.toLocaleString(undefined, { year:"numeric", month:"short", day:"2-digit", hour:"2-digit", minute:"2-digit" });
-  }
-  function minutesBetween(a,b){
-    if(!a || !b) return null;
-    return Math.max(0, Math.round((b.getTime()-a.getTime())/60000));
-  }
-  function durationLabel(ep){
-    const s = ep.startAt ? new Date(ep.startAt) : null;
-    const e = ep.endAt ? new Date(ep.endAt) : null;
-    if(ep.ongoing) return "Ongoing";
-    if(s && e){
-      const mins = minutesBetween(s,e);
-      if(mins === null) return "—";
-      if(mins < 60) return `${mins} min`;
-      const h = Math.floor(mins/60);
-      const m = mins % 60;
-      return m ? `${h}h ${m}m` : `${h}h`;
-    }
-    if(ep.durationMins) {
-      const mins = Number(ep.durationMins);
-      if(mins < 60) return `${mins} min`;
-      const h = Math.floor(mins/60);
-      const m = mins % 60;
-      return m ? `${h}h ${m}m` : `${h}h`;
-    }
-    return "—";
-  }
-  function daysAgoCutoff(days){
-    const d = new Date();
-    d.setDate(d.getDate() - days);
-    return d;
-  }
-  function filterByRange(list, range){
-    if(range === "all") return [...list];
-    const days = Number(range);
-    const cutoff = daysAgoCutoff(days).getTime();
-    return list.filter(e => {
-      const t = e.startAt ? new Date(e.startAt).getTime() : 0;
-      return t >= cutoff;
-    });
-  }
-  function filterBySeverity(list, sev){
-    if(sev === "all") return [...list];
-    if(sev === "7+") return list.filter(e => Number(e.severity||0) >= 7);
-    if(sev === "4+") return list.filter(e => Number(e.severity||0) >= 4);
-    if(sev === "0-3") return list.filter(e => Number(e.severity||0) <= 3);
-    return [...list];
-  }
-
-  // ---- Firestore refs ----
-  function episodeColl(){ return collection(db, "vaults", VAULT_ID, "episodes"); }
-  function draftDoc(){ return doc(db, "vaults", VAULT_ID, "draft", "current"); }
-  function shareDoc(){ return doc(db, "vaults", VAULT_ID, "share", "active"); }
-
-  // ---- Chips builder ----
-  function buildChips(containerId, items, {multi=false, onChange, getSelected}){
-    const wrap = $(containerId);
-    if(!wrap) return;
-    wrap.innerHTML = "";
-    items.forEach(label=>{
-      const div = document.createElement("div");
-      div.className = "chip";
-      div.textContent = label;
-
-      const isSelected = ()=> {
-        const sel = getSelected();
-        if(multi) return Array.isArray(sel) && sel.includes(label);
-        return sel === label;
-      };
-
-      div.classList.toggle("selected", isSelected());
-
-      div.addEventListener("click", ()=>{
-        const cur = getSelected();
-        if(multi){
-          let arr = Array.isArray(cur) ? [...cur] : [];
-          if(label === "None"){
-            arr = ["None"];
-          } else {
-            arr = arr.filter(x => x !== "None");
-            if(arr.includes(label)) arr = arr.filter(x=>x!==label);
-            else arr.push(label);
-          }
-          onChange(arr);
-        } else {
-          onChange(label);
-        }
-
-        if(containerId === "painTypeChips"){
-          const help = PAIN_TYPE_HELP[label] || "Tap a pain type to see a quick guide.";
-          if($("painTypeHelpText")) $("painTypeHelpText").textContent = help;
-
-          const showOther = (label === "Other");
-          if($("painTypeOtherWrap")) $("painTypeOtherWrap").style.display = showOther ? "block" : "none";
-          if(!showOther && $("painTypeOtherText")) $("painTypeOtherText").value = "";
-          if($("painTypeOtherCount")) $("painTypeOtherCount").textContent = "0";
-        }
-
-        [...wrap.children].forEach(ch => {
-          const sel = getSelected();
-          const ok = multi ? (Array.isArray(sel) && sel.includes(ch.textContent)) : (sel === ch.textContent);
-          ch.classList.toggle("selected", ok);
-        });
-      });
-
-      wrap.appendChild(div);
-    });
-  }
-
-  function renderAllChips(){
-    buildChips("painTypeChips", ENUMS.painType, {
-      multi:false,
-      getSelected: ()=> state.painType,
-      onChange: (v)=> { state.painType = v; scheduleDraftSave(); }
-    });
-
-    buildChips("locationChips", ENUMS.location, {
-      multi:false,
-      getSelected: ()=> state.location,
-      onChange: (v)=> { state.location = v; scheduleDraftSave(); }
-    });
-
-    buildChips("activityChips", ENUMS.activity, {
-      multi:false,
-      getSelected: ()=> state.activity,
-      onChange: (v)=> { state.activity = v; scheduleDraftSave(); }
-    });
-
-    buildChips("reliefChips", ENUMS.relief, {
-      multi:false,
-      getSelected: ()=> state.relief,
-      onChange: (v)=> { state.relief = v; scheduleDraftSave(); }
-    });
-
-    buildChips("symptomChips", ENUMS.symptoms, {
-      multi:true,
-      getSelected: ()=> state.symptoms,
-      onChange: (v)=> { state.symptoms = v; scheduleDraftSave(); }
-    });
-
-    const dwrap = $("durationChips");
-    if(dwrap){
-      dwrap.innerHTML = "";
-      ENUMS.durationMins.forEach(m=>{
-        const label = (m < 60) ? `${m} min` : (m%60 ? `${Math.floor(m/60)}h ${m%60}m` : `${Math.floor(m/60)}h`);
-        const div = document.createElement("div");
-        div.className = "chip";
-        div.textContent = label;
-        div.classList.toggle("selected", state.durationMins === m);
-        div.addEventListener("click", ()=>{
-          state.durationMins = (state.durationMins === m) ? null : m;
-          [...dwrap.children].forEach(ch=>ch.classList.remove("selected"));
-          div.classList.toggle("selected", state.durationMins === m);
-          scheduleDraftSave();
-        });
-        dwrap.appendChild(div);
-      });
-    }
-  }
-
-  // ---- Form state helpers ----
-  function resetFormToDefaults(){
-    if($("startAt")) $("startAt").value = nowLocal();
-    if($("ongoing")) $("ongoing").value = "true";
-    if($("endAtWrap")) $("endAtWrap").style.display = "none";
-    if($("endAt")) $("endAt").value = "";
-    if($("severity")) $("severity").value = "5";
-    if($("severityVal")) $("severityVal").textContent = "5";
-    if($("notes")) $("notes").value = "";
-    if($("notesCount")) $("notesCount").textContent = "0";
-
-    if($("v_hr")) $("v_hr").value = "";
-    if($("v_spo2")) $("v_spo2").value = "";
-    if($("v_bpsys")) $("v_bpsys").value = "";
-    if($("v_bpdia")) $("v_bpdia").value = "";
-
-    state.painType = "Pressure";
-    state.location = "Center";
-    state.activity = "Rest";
-    state.relief = "None";
-    state.symptoms = ["None"];
-    state.durationMins = null;
-
-    if($("painTypeHelpText")) $("painTypeHelpText").textContent = PAIN_TYPE_HELP[state.painType];
-    if($("painTypeOtherWrap")) $("painTypeOtherWrap").style.display = "none";
-    if($("painTypeOtherText")) $("painTypeOtherText").value = "";
-    if($("painTypeOtherCount")) $("painTypeOtherCount").textContent = "0";
-
-    renderAllChips();
-  }
-
-  function readFormIntoObj(){
-    const start = parseDTLocal($("startAt")?.value);
-    const ongoing = ($("ongoing")?.value === "true");
-    const end = parseDTLocal($("endAt")?.value);
-
-    return {
-      startAt: start ? start.toISOString() : null,
-      ongoing,
-      endAt: (!ongoing && end) ? end.toISOString() : null,
-      durationMins: (!ongoing && state.durationMins) ? state.durationMins : null,
-      severity: Number($("severity")?.value || 0),
-
-      painType: state.painType,
-      painTypeOther: (state.painType === "Other") ? ( $("painTypeOtherText")?.value || "" ) : "",
-      location: state.location,
-      activity: state.activity,
-      relief: state.relief,
-      symptoms: Array.isArray(state.symptoms) ? state.symptoms : ["None"],
-
-      notes: $("notes")?.value || "",
-
-      vitals: {
-        hr: $("v_hr")?.value ? Number($("v_hr").value) : null,
-        spo2: $("v_spo2")?.value ? Number($("v_spo2").value) : null,
-        bpSys: $("v_bpsys")?.value ? Number($("v_bpsys").value) : null,
-        bpDia: $("v_bpdia")?.value ? Number($("v_bpdia").value) : null,
-      }
+    // --------------- YOUR FIREBASE CONFIG ---------------
+    // Paste your firebaseConfig exactly as provided by Firebase Console.
+    // It is expected to be public. Security is enforced by Firestore rules + design.
+    const firebaseConfig = window.firebaseConfig || {
+      // TODO: keep your existing config here
+      // apiKey: "...",
+      // authDomain: "...",
+      // projectId: "...",
+      // storageBucket: "...",
+      // messagingSenderId: "...",
+      // appId: "..."
     };
-  }
+    // ----------------------------------------------------
 
-  function populateFormFromObj(obj){
-    if(!obj) return;
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
 
-    if($("startAt") && obj.startAt){
-      const d = new Date(obj.startAt);
-      const pad = (n)=>String(n).padStart(2,"0");
-      const v = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-      $("startAt").value = v;
-    }
+    // UI references
+    const syncLabel = document.getElementById("syncLabel");
+    const syncDot = document.getElementById("syncDot");
 
-    if($("ongoing")) $("ongoing").value = obj.ongoing ? "true" : "false";
-    if($("endAtWrap")) $("endAtWrap").style.display = obj.ongoing ? "none" : "block";
+    const viewHome = document.getElementById("viewHome");
+    const viewHistory = document.getElementById("viewHistory");
+    const viewExport = document.getElementById("viewExport");
 
-    if($("endAt") && obj.endAt){
-      const d = new Date(obj.endAt);
-      const pad = (n)=>String(n).padStart(2,"0");
-      const v = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-      $("endAt").value = v;
-    } else {
-      if($("endAt")) $("endAt").value = "";
-    }
+    const btnLogNow = document.getElementById("btnLogNow");
 
-    if($("severity")) $("severity").value = String(obj.severity ?? 5);
-    if($("severityVal")) $("severityVal").textContent = String(obj.severity ?? 5);
+    const histList = document.getElementById("histList");
+    const histEmpty = document.getElementById("histEmpty");
+    const histRange = document.getElementById("histRange");
+    const histSev = document.getElementById("histSev");
 
-    state.painType = obj.painType || "Pressure";
-    state.location = obj.location || "Center";
-    state.activity = obj.activity || "Rest";
-    state.relief = obj.relief || "None";
-    state.symptoms = Array.isArray(obj.symptoms) && obj.symptoms.length ? obj.symptoms : ["None"];
-    state.durationMins = obj.durationMins ?? null;
+    const expRange = document.getElementById("expRange");
+    const btnRefreshExport = document.getElementById("btnRefreshExport");
 
-    if($("notes")) $("notes").value = obj.notes || "";
-    if($("notesCount")) $("notesCount").textContent = String((obj.notes || "").length);
+    const glance7 = document.getElementById("glance7");
+    const glance30 = document.getElementById("glance30");
+    const glanceLastSev = document.getElementById("glanceLastSev");
+    const glanceCommonActivity = document.getElementById("glanceCommonActivity");
 
-    if($("painTypeOtherText")) $("painTypeOtherText").value = obj.painTypeOther || "";
-    if($("painTypeOtherCount")) $("painTypeOtherCount").textContent = String((obj.painTypeOther || "").length);
-    if($("painTypeOtherWrap")) $("painTypeOtherWrap").style.display = (state.painType === "Other") ? "block" : "none";
+    const uidShort = document.getElementById("uidShort");
+    const btnCopyLink = document.getElementById("btnCopyLink");
+    const btnLoadExisting = document.getElementById("btnLoadExisting");
+    const btnShowLink = document.getElementById("btnShowLink");
+    const linkModal = document.getElementById("linkModal");
+    const linkText = document.getElementById("linkText");
+    const btnCopyLink2 = document.getElementById("btnCopyLink2");
+    const btnCloseLinkModal = document.getElementById("btnCloseLinkModal");
 
-    if($("painTypeHelpText")) $("painTypeHelpText").textContent = PAIN_TYPE_HELP[state.painType] || "Tap a pain type to see a quick guide.";
+    const btnPrint = document.getElementById("btnPrint");
+    const btnCSV = document.getElementById("btnCSV");
+    const reportGen = document.getElementById("reportGen");
+    const reportSummary = document.getElementById("reportSummary");
+    const reportEpisodes = document.getElementById("reportEpisodes");
 
-    if($("v_hr")) $("v_hr").value = obj.vitals?.hr ?? "";
-    if($("v_spo2")) $("v_spo2").value = obj.vitals?.spo2 ?? "";
-    if($("v_bpsys")) $("v_bpsys").value = obj.vitals?.bpSys ?? "";
-    if($("v_bpdia")) $("v_bpdia").value = obj.vitals?.bpDia ?? "";
+    const btnCreateShare = document.getElementById("btnCreateShare");
+    const btnCopyShare = document.getElementById("btnCopyShare");
+    const btnRevokeShare = document.getElementById("btnRevokeShare");
 
-    renderAllChips();
-  }
+    // Log modal
+    const logModal = document.getElementById("logModal");
+    const logTitle = document.getElementById("logTitle");
+    const logModeHint = document.getElementById("logModeHint");
+    const btnCloseTop = document.getElementById("btnCloseTop");
+    const btnDiscardTop = document.getElementById("btnDiscardTop");
+    const btnClose = document.getElementById("btnClose");
+    const btnDiscard = document.getElementById("btnDiscard");
+    const btnSave = document.getElementById("btnSave");
+    const btnSavePrimary = document.getElementById("btnSavePrimary");
 
-  function episodeSummaryLine(ep){
-    const dt = ep.startAt ? fmtDateTime(ep.startAt) : "—";
-    const sev = (ep.severity ?? "—") + "/10";
-    const type = (ep.painType === "Other" && ep.painTypeOther) ? `Other(${ep.painTypeOther})` : (ep.painType || "—");
-    const loc = ep.location || "—";
-    const act = ep.activity || "—";
-    return `${dt} • ${sev} • ${type} • ${loc} • ${act}`;
-  }
+    const fWhen = document.getElementById("fWhen");
+    const fSev = document.getElementById("fSev");
+    const sevVal = document.getElementById("sevVal");
+    const fNotes = document.getElementById("fNotes");
+    const fHR = document.getElementById("fHR");
+    const fBPsys = document.getElementById("fBPsys");
+    const fBPdia = document.getElementById("fBPdia");
 
-  function updateDraftHomeCard(){
-    if(DRAFT && DRAFT.startAt){
-      if($("resumeDraftBox")) $("resumeDraftBox").style.display = "block";
-      if($("draftSummary")) $("draftSummary").textContent = episodeSummaryLine(DRAFT);
-    } else {
-      if($("resumeDraftBox")) $("resumeDraftBox").style.display = "none";
-      if($("draftSummary")) $("draftSummary").textContent = "";
-    }
-  }
+    const durChips = document.getElementById("durChips");
+    const typeChips = document.getElementById("typeChips");
+    const locChips = document.getElementById("locChips");
+    const actChips = document.getElementById("actChips");
+    const relChips = document.getElementById("relChips");
+    const symChips = document.getElementById("symChips");
 
-  function updateKPIs(){
-    const last7 = filterByRange(EPISODES, "7").length;
-    const last30 = filterByRange(EPISODES, "30").length;
-    if($("kpi7d")) $("kpi7d").textContent = String(last7);
-    if($("kpi30d")) $("kpi30d").textContent = String(last30);
+    const typeOtherWrap = document.getElementById("typeOtherWrap");
+    const fTypeOther = document.getElementById("fTypeOther");
+    const locOtherWrap = document.getElementById("locOtherWrap");
+    const fLocOther = document.getElementById("fLocOther");
+    const actOtherWrap = document.getElementById("actOtherWrap");
+    const fActOther = document.getElementById("fActOther");
+    const relOtherWrap = document.getElementById("relOtherWrap");
+    const fRelOther = document.getElementById("fRelOther");
 
-    const sorted = [...EPISODES].sort((a,b)=> (new Date(b.startAt||0).getTime() - new Date(a.startAt||0).getTime()));
-    if($("kpiLast")) $("kpiLast").textContent = sorted.length ? `${sorted[0].severity ?? "—"}/10` : "—";
+    const typeGuideText = document.getElementById("typeGuideText");
 
-    const last30List = filterByRange(EPISODES, "30");
-    const freq = {};
-    last30List.forEach(e=>{
-      const k = e.activity || "—";
-      freq[k] = (freq[k]||0) + 1;
-    });
-    let best = "—";
-    let bestN = 0;
-    Object.entries(freq).forEach(([k,n])=>{
-      if(n > bestN){ bestN = n; best = `${k} (${n})`; }
-    });
-    if($("kpiCommonActivity")) $("kpiCommonActivity").textContent = best;
-  }
-
-  function renderHistory(){
-    const range = $("historyRange")?.value || "7";
-    const sev = $("historySeverity")?.value || "all";
-
-    let list = filterByRange(EPISODES, range);
-    list = filterBySeverity(list, sev);
-    list.sort((a,b)=> (new Date(b.startAt||0).getTime() - new Date(a.startAt||0).getTime()));
-
-    const wrap = $("historyList");
-    if(!wrap) return;
-    wrap.innerHTML = "";
-
-    if(!list.length){
-      const empty = document.createElement("div");
-      empty.className = "subcard";
-      empty.innerHTML = `<div class="muted">No episodes in this filter.</div>`;
-      wrap.appendChild(empty);
-      return;
-    }
-
-    list.forEach(ep=>{
-      const div = document.createElement("div");
-      div.className = "item";
-      const left = document.createElement("div");
-      const right = document.createElement("div");
-      right.style.textAlign = "right";
-      right.style.minWidth = "90px";
-
-      const title = document.createElement("b");
-      title.textContent = fmtDateTime(ep.startAt || new Date());
-
-      const sub = document.createElement("span");
-      sub.className = "small";
-      const type = (ep.painType === "Other" && ep.painTypeOther) ? `Other(${ep.painTypeOther})` : (ep.painType || "—");
-      sub.textContent = `${type} • ${ep.location || "—"} • ${ep.activity || "—"}`;
-
-      left.appendChild(title);
-      left.appendChild(sub);
-
-      const sevEl = document.createElement("b");
-      sevEl.textContent = `${ep.severity ?? "—"}/10`;
-      const dur = document.createElement("span");
-      dur.className = "small";
-      dur.textContent = durationLabel(ep);
-
-      right.appendChild(sevEl);
-      right.appendChild(dur);
-
-      div.appendChild(left);
-      div.appendChild(right);
-
-      wrap.appendChild(div);
-    });
-  }
-
-  function buildSummaryText(list){
-    const total = list.length;
-    if(!total) return "No episodes in this time range.";
-
-    const sevVals = list.map(e=>Number(e.severity||0));
-    const avg = (sevVals.reduce((a,b)=>a+b,0) / total).toFixed(1);
-    const max = Math.max(...sevVals);
-
-    const freqAct = {};
-    list.forEach(e=>{
-      const k = e.activity || "—";
-      freqAct[k] = (freqAct[k]||0) + 1;
-    });
-    let topAct = "—";
-    let topN = 0;
-    Object.entries(freqAct).forEach(([k,n])=>{
-      if(n > topN){ topN = n; topAct = `${k} (${n})`; }
-    });
-
-    return `Total episodes: ${total}. Average severity: ${avg}/10 (max ${max}/10). Most common onset activity: ${topAct}.`;
-  }
-
-  function rowsForReport(list, tbodyId){
-    const tbody = $(tbodyId);
-    if(!tbody) return;
-    tbody.innerHTML = "";
-    list.forEach(ep=>{
-      const dt = fmtDateTime(ep.startAt);
-      const sev = `${ep.severity ?? "—"}/10`;
-      const dur = durationLabel(ep);
-      const act = ep.activity || "—";
-      const type = (ep.painType === "Other" && ep.painTypeOther) ? `Other (${ep.painTypeOther})` : (ep.painType || "—");
-      const typeLoc = `${type} • ${ep.location || "—"}`;
-      const symptoms = (Array.isArray(ep.symptoms) && ep.symptoms.length) ? ep.symptoms.join(", ") : "—";
-      const relief = ep.relief || "—";
-      const notes = ep.notes ? ep.notes : "";
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${dt}</td>
-        <td>${sev}</td>
-        <td>${dur}</td>
-        <td>${act}</td>
-        <td>${typeLoc}</td>
-        <td>${symptoms}</td>
-        <td>${relief}</td>
-        <td>${notes}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
-
-  function refreshReport(){
-    const range = $("exportRange")?.value || "30";
-    const list = filterByRange(EPISODES, range).sort((a,b)=> (new Date(a.startAt||0) - new Date(b.startAt||0)));
-    if($("reportGeneratedAt")) $("reportGeneratedAt").textContent = fmtDateTime(new Date());
-    if($("reportSummary")) $("reportSummary").textContent = buildSummaryText(list);
-    rowsForReport(list, "reportTbody");
-  }
-
-  function downloadCsv(list, filename="chest_pain_logs.csv"){
-    const cols = [
-      "startAt","ongoing","endAt","durationMins","severity","painType","painTypeOther","location",
-      "activity","relief","symptoms","notes","v_hr","v_spo2","v_bpSys","v_bpDia"
+    // Bottom tabs
+    const tabs = [
+      { id:"tabHome", label:"Home", el:null, view:viewHome },
+      { id:"tabLog", label:"Log", el:null, view:null },
+      { id:"tabHistory", label:"History", el:null, view:viewHistory },
+      { id:"tabExport", label:"Export", el:null, view:viewExport },
     ];
 
-    const esc = (v)=>{
-      if(v === null || v === undefined) return "";
-      const s = String(v).replaceAll('"','""');
-      return `"${s}"`;
+    // State
+    let VAULT_ID = null;
+    let SHARE_TOKEN = null;
+
+    let logsUnsub = null;
+    let logsCache = []; // full logs for current vault
+    let draft = null;
+
+    let logMode = "new";   // "new" | "edit"
+    let editingId = null;  // Firestore doc id when editing
+
+    // ----- Helpers -----
+    function setSync(state){
+      // state: "Starting…" | "Synced" | "Saving…" | "Offline" | "Sync error"
+      syncLabel.textContent = state;
+      if(state.includes("Synced")){
+        syncDot.style.background = "var(--accent2)";
+      }else if(state.includes("Saving") || state.includes("Starting")){
+        syncDot.style.background = "var(--warn)";
+      }else{
+        syncDot.style.background = "var(--danger)";
+      }
+    }
+
+    function qs(k){ return new URLSearchParams(location.search).get(k); }
+    function setQs(k,v){
+      const u = new URL(location.href);
+      u.searchParams.set(k,v);
+      history.replaceState({}, "", u.toString());
+    }
+
+    function makeVaultId(){
+      // 64 hex
+      const a = new Uint8Array(32);
+      crypto.getRandomValues(a);
+      return [...a].map(b=>b.toString(16).padStart(2,"0")).join("");
+    }
+
+    function shortId(id){ return id ? id.slice(0,7) : "—"; }
+
+    function vaultRef(){ return doc(db, "vaults", VAULT_ID); }
+    function logsCol(){ return collection(db, "vaults", VAULT_ID, "logs"); }
+    function draftDoc(){ return doc(db, "vaults", VAULT_ID, "meta", "draft"); }
+    function shareDoc(){ return doc(db, "vaults", VAULT_ID, "share", "active"); }
+
+    function makeShareToken(){
+      const a = new Uint8Array(18);
+      crypto.getRandomValues(a);
+      return btoa(String.fromCharCode(...a)).replaceAll("+","-").replaceAll("/","_").replaceAll("=","");
+    }
+
+    function fmtDateTime(ts){
+      const d = ts instanceof Date ? ts : new Date(ts);
+      const date = d.toLocaleDateString(undefined, { month:"short", day:"2-digit", year:"numeric" });
+      let time = d.toLocaleTimeString(undefined, { hour:"2-digit", minute:"2-digit" });
+      // Ensure space between time and AM/PM won't break oddly
+      time = time.replace(" AM", "\u00A0AM").replace(" PM", "\u00A0PM");
+      return {date, time, whenLine: `${date} \u2022 ${time}`};
+    }
+
+    function daysAgo(n){
+      const d = new Date();
+      d.setHours(0,0,0,0);
+      d.setDate(d.getDate() - n);
+      return d;
+    }
+
+    function filterLogs(rangeVal, sevVal){
+      const now = new Date();
+      let from = null;
+      if(rangeVal !== "all"){
+        const days = Number(rangeVal);
+        from = new Date(now);
+        from.setDate(from.getDate() - days);
+      }
+      return logsCache.filter(l=>{
+        const t = l.when?.toDate ? l.when.toDate() : (l.when instanceof Date ? l.when : new Date(l.when));
+        if(from && t < from) return false;
+        const s = Number(l.severity ?? 0);
+        if(sevVal === "mild" && !(s>=1 && s<=3)) return false;
+        if(sevVal === "mod" && !(s>=4 && s<=6)) return false;
+        if(sevVal === "sev" && !(s>=7 && s<=10)) return false;
+        return true;
+      }).sort((a,b)=>{
+        const ta = a.when?.toMillis ? a.when.toMillis() : new Date(a.when).getTime();
+        const tb = b.when?.toMillis ? b.when.toMillis() : new Date(b.when).getTime();
+        return tb - ta;
+      });
+    }
+
+    function csvEscape(v){
+      if(v == null) return "";
+      const s = String(v);
+      if(/[",\n]/.test(s)) return `"${s.replaceAll('"','""')}"`;
+      return s;
+    }
+
+    // ----- Chips -----
+    function mkChip(container, label, {multi=false, onChange, isOther=false} = {}){
+      const el = document.createElement("button");
+      el.type = "button";
+      el.className = "chip";
+      el.textContent = label;
+      el.dataset.value = label;
+      el.dataset.other = isOther ? "1" : "0";
+      el.addEventListener("click", ()=>{
+        if(multi){
+          const on = el.classList.toggle("on");
+          onChange?.();
+        }else{
+          [...container.querySelectorAll(".chip")].forEach(c=>c.classList.remove("on"));
+          el.classList.add("on");
+          onChange?.();
+        }
+      });
+      container.appendChild(el);
+      return el;
+    }
+
+    function getSingle(container){
+      const on = container.querySelector(".chip.on");
+      return on ? on.dataset.value : null;
+    }
+    function getMulti(container){
+      return [...container.querySelectorAll(".chip.on")].map(x=>x.dataset.value);
+    }
+    function setSingle(container, val){
+      [...container.querySelectorAll(".chip")].forEach(c=>{
+        c.classList.toggle("on", c.dataset.value === val);
+      });
+    }
+    function setMulti(container, arr){
+      const set = new Set(arr || []);
+      [...container.querySelectorAll(".chip")].forEach(c=>{
+        c.classList.toggle("on", set.has(c.dataset.value));
+      });
+    }
+
+    const painTypeGuides = {
+      "Pressure":"Tight, heavy, squeezing feeling (like weight on chest).",
+      "Sharp":"Stabbing or needle-like pain, often well-localized.",
+      "Burning":"Hot or acidic burning feeling (can overlap with reflux).",
+      "Aching":"Dull soreness or ache rather than sharp pain.",
+      "Fluttering":"More like a strange sensation/palpitations than pain.",
+      "Other":"Use this if it doesn’t match. Keep it short and specific."
     };
 
-    const lines = [];
-    lines.push(cols.join(","));
-    list.forEach(e=>{
-      const row = [
-        e.startAt || "",
-        e.ongoing ? "true" : "false",
-        e.endAt || "",
-        e.durationMins ?? "",
-        e.severity ?? "",
-        e.painType ?? "",
-        e.painTypeOther ?? "",
-        e.location ?? "",
-        e.activity ?? "",
-        e.relief ?? "",
-        Array.isArray(e.symptoms) ? e.symptoms.join("; ") : "",
-        e.notes ?? "",
-        e.vitals?.hr ?? "",
-        e.vitals?.spo2 ?? "",
-        e.vitals?.bpSys ?? "",
-        e.vitals?.bpDia ?? "",
-      ].map(esc);
-      lines.push(row.join(","));
-    });
+    function buildChips(){
+      durChips.innerHTML = "";
+      ["Ongoing","< 5 min","5–15 min","15–60 min","> 1 hr"].forEach(v=>mkChip(durChips, v));
 
-    const blob = new Blob([lines.join("\n")], {type:"text/csv;charset=utf-8"});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  }
+      typeChips.innerHTML = "";
+      ["Pressure","Sharp","Burning","Aching","Fluttering","Other"].forEach(v=>{
+        mkChip(typeChips, v, {
+          onChange: ()=>{
+            const sel = getSingle(typeChips);
+            typeOtherWrap.style.display = (sel==="Other") ? "block" : "none";
+            typeGuideText.textContent = painTypeGuides[sel] || "Tap a pain type to see a short guide.";
+          },
+          isOther: v==="Other"
+        });
+      });
 
-  // ---- Draft autosave ----
-  function scheduleDraftSave(){
-    if(getShareFromUrl()) return;
-    if(!VAULT_ID) return;
+      locChips.innerHTML = "";
+      ["Center","Left","Right","Upper abdomen","Other"].forEach(v=>{
+        mkChip(locChips, v, { onChange: ()=>{
+          locOtherWrap.style.display = (getSingle(locChips)==="Other") ? "block" : "none";
+        }});
+      });
 
-    setSync("Saving…");
-    if(draftTimer) clearTimeout(draftTimer);
+      actChips.innerHTML = "";
+      ["Rest","Walking","Stairs","Exercise","After meal","Stress","Sleeping","Other"].forEach(v=>{
+        mkChip(actChips, v, { onChange: ()=>{
+          actOtherWrap.style.display = (getSingle(actChips)==="Other") ? "block" : "none";
+        }});
+      });
 
-    draftTimer = setTimeout(async ()=>{
+      relChips.innerHTML = "";
+      ["Rest","Breathing","Antacid","Nitro","Painkiller","None","Other"].forEach(v=>{
+        mkChip(relChips, v, { onChange: ()=>{
+          relOtherWrap.style.display = (getSingle(relChips)==="Other") ? "block" : "none";
+        }});
+      });
+
+      symChips.innerHTML = "";
+      ["Shortness of breath","Sweating","Nausea","Dizziness","Palpitations","Radiation (arm/jaw/back)","None"].forEach(v=>{
+        mkChip(symChips, v, {multi:true, onChange: ()=>{
+          // If None selected, clear others; if any other selected, clear None
+          const arr = getMulti(symChips);
+          if(arr.includes("None") && arr.length>1){
+            setMulti(symChips, ["None"]);
+          }else if(arr.length>=1 && !arr.includes("None")){
+            // ok
+          }else{
+            // ok
+          }
+        }});
+      });
+    }
+
+    // ----- Views -----
+    function showView(which){
+      viewHome.style.display = (which==="home") ? "" : "none";
+      viewHistory.style.display = (which==="history") ? "" : "none";
+      viewExport.style.display = (which==="export") ? "" : "none";
+      document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+      const map = {home:"tabHome", history:"tabHistory", export:"tabExport"};
+      if(map[which]) document.getElementById(map[which]).classList.add("active");
+      window.scrollTo({top:0, behavior:"smooth"});
+      if(which==="history") renderHistory();
+      if(which==="export") renderExport();
+    }
+
+    // ----- Draft + Log modal -----
+    function openLogModal(mode, logObj=null){
+      logMode = mode;
+      editingId = logObj?.id || null;
+      logTitle.textContent = mode==="edit" ? "Edit episode" : "Log an episode";
+      logModeHint.textContent = mode==="edit" ? "Edit and save changes." : "Draft saves automatically while you type.";
+
+      const now = new Date();
+      const {whenLine} = fmtDateTime(now);
+      fWhen.value = mode==="edit" ? fmtDateTime(logObj.when?.toDate ? logObj.when.toDate() : logObj.when).whenLine : whenLine;
+
+      // Reset fields
+      fSev.value = (logObj?.severity ?? 5);
+      sevVal.textContent = String(fSev.value);
+      setSingle(durChips, logObj?.duration ?? "Ongoing");
+
+      setSingle(typeChips, logObj?.painType ?? "Pressure");
+      typeGuideText.textContent = painTypeGuides[getSingle(typeChips)] || "Tap a pain type to see a short guide.";
+      fTypeOther.value = logObj?.painTypeOther ?? "";
+      typeOtherWrap.style.display = (getSingle(typeChips)==="Other") ? "block" : "none";
+
+      setSingle(locChips, logObj?.location ?? "Center");
+      fLocOther.value = logObj?.locationOther ?? "";
+      locOtherWrap.style.display = (getSingle(locChips)==="Other") ? "block" : "none";
+
+      setSingle(actChips, logObj?.activity ?? "Rest");
+      fActOther.value = logObj?.activityOther ?? "";
+      actOtherWrap.style.display = (getSingle(actChips)==="Other") ? "block" : "none";
+
+      setSingle(relChips, logObj?.relief ?? "None");
+      fRelOther.value = logObj?.reliefOther ?? "";
+      relOtherWrap.style.display = (getSingle(relChips)==="Other") ? "block" : "none";
+
+      setMulti(symChips, logObj?.symptoms ?? []);
+      fNotes.value = logObj?.notes ?? "";
+
+      fHR.value = logObj?.hr ?? "";
+      fBPsys.value = logObj?.bpSys ?? "";
+      fBPdia.value = logObj?.bpDia ?? "";
+
+      logModal.classList.add("on");
+    }
+
+    function closeLogModal(){
+      logModal.classList.remove("on");
+    }
+
+    function currentDraftObject(){
+      return {
+        updatedAt: serverTimestamp(),
+        severity: Number(fSev.value),
+        duration: getSingle(durChips),
+        painType: getSingle(typeChips),
+        painTypeOther: (getSingle(typeChips)==="Other") ? (fTypeOther.value || "") : "",
+        location: getSingle(locChips),
+        locationOther: (getSingle(locChips)==="Other") ? (fLocOther.value || "") : "",
+        activity: getSingle(actChips),
+        activityOther: (getSingle(actChips)==="Other") ? (fActOther.value || "") : "",
+        relief: getSingle(relChips),
+        reliefOther: (getSingle(relChips)==="Other") ? (fRelOther.value || "") : "",
+        symptoms: getMulti(symChips),
+        notes: fNotes.value || "",
+        hr: fHR.value ? Number(fHR.value) : null,
+        bpSys: fBPsys.value ? Number(fBPsys.value) : null,
+        bpDia: fBPdia.value ? Number(fBPdia.value) : null
+      };
+    }
+
+    let draftSaveTimer = null;
+    function scheduleDraftSave(){
+      if(logMode !== "new") return; // only autosave drafts in new mode
+      clearTimeout(draftSaveTimer);
+      draftSaveTimer = setTimeout(async ()=>{
+        try{
+          setSync("Saving…");
+          await setDoc(draftDoc(), currentDraftObject(), {merge:true});
+          setSync("Synced");
+        }catch(e){
+          console.error(e);
+          setSync("Sync error");
+        }
+      }, 350);
+    }
+
+    async function discardDraft(){
+      const ok = confirm("Discard this draft?");
+      if(!ok) return;
       try{
-        const data = readFormIntoObj();
-        await setDoc(draftDoc(), {
-          ...data,
-          updatedAt: serverTimestamp()
-        }, {merge:true});
+        setSync("Saving…");
+        await deleteDoc(draftDoc()).catch(()=>{});
         setSync("Synced");
       }catch(e){
         console.error(e);
-        setSync("Sync error (draft)");
+        setSync("Sync error");
       }
-    }, 350);
-  }
-
-  // ---- Critical fix: wire modal buttons to real actions ----
-  function closeLogSheet(){
-    hideModal();
-  }
-
-  async function discardDraftEverywhere(){
-    if(!VAULT_ID) return;
-    const ok = confirm("Discard this draft?");
-    if(!ok) return;
-
-    setSync("Saving…");
-    try{
-      await deleteDoc(draftDoc());
-      DRAFT = null;
-      updateDraftHomeCard();
-      resetFormToDefaults();
-      setSync("Synced");
-    }catch(e){
-      console.error(e);
-      setSync("Sync error (discard)");
-      alert("Could not discard draft. Check your connection / rules.");
-    }
-  }
-
-  async function saveLog(){
-    if(!VAULT_ID) return;
-
-    const data = readFormIntoObj();
-    if(!data.startAt){
-      alert("Please set a start time.");
-      return;
+      closeLogModal();
     }
 
-    setSync("Saving…");
+    async function saveLog(){
+      // Works for both NEW and EDIT
+      try{
+        setSync("Saving…");
+        const payload = {
+          when: (logMode==="edit" && editingId)
+            ? (logsCache.find(x=>x.id===editingId)?.when || serverTimestamp())
+            : serverTimestamp(),
+          createdAt: (logMode==="edit" && editingId) ? undefined : serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          severity: Number(fSev.value),
+          duration: getSingle(durChips),
+          painType: getSingle(typeChips),
+          painTypeOther: (getSingle(typeChips)==="Other") ? (fTypeOther.value || "") : "",
+          location: getSingle(locChips),
+          locationOther: (getSingle(locChips)==="Other") ? (fLocOther.value || "") : "",
+          activity: getSingle(actChips),
+          activityOther: (getSingle(actChips)==="Other") ? (fActOther.value || "") : "",
+          relief: getSingle(relChips),
+          reliefOther: (getSingle(relChips)==="Other") ? (fRelOther.value || "") : "",
+          symptoms: getMulti(symChips),
+          notes: fNotes.value || "",
+          hr: fHR.value ? Number(fHR.value) : null,
+          bpSys: fBPsys.value ? Number(fBPsys.value) : null,
+          bpDia: fBPdia.value ? Number(fBPdia.value) : null
+        };
 
-    // prevent double taps
-    setSaveButtonsEnabled(false);
+        if(logMode === "edit" && editingId){
+          const ref = doc(db, "vaults", VAULT_ID, "logs", editingId);
+          // remove undefined keys
+          Object.keys(payload).forEach(k=>payload[k]===undefined && delete payload[k]);
+          await updateDoc(ref, payload);
+        }else{
+          // NEW
+          Object.keys(payload).forEach(k=>payload[k]===undefined && delete payload[k]);
+          await addDoc(logsCol(), payload);
+          // clear draft after save
+          await deleteDoc(draftDoc()).catch(()=>{});
+        }
 
-    try{
-      const id = crypto.randomUUID();
-      await setDoc(doc(db, "vaults", VAULT_ID, "episodes", id), {
-        ...data,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      });
-
-      // clear draft after successful save
-      await deleteDoc(draftDoc()).catch(()=>{});
-
-      DRAFT = null;
-      updateDraftHomeCard();
-      resetFormToDefaults();
-      hideModal();
-      setSync("Synced");
-    }catch(e){
-      console.error(e);
-      setSync("Sync error (save)");
-      alert("Could not save log. Check your connection / rules.");
-    }finally{
-      setSaveButtonsEnabled(true);
-    }
-  }
-
-  function setSaveButtonsEnabled(enabled){
-    const ids = ["saveSheet","saveSheetInline","closeSheet","closeSheetFooter","discardDraftBtnHeader","discardDraftBtnFooter"];
-    ids.forEach(id=>{
-      const el = $(id);
-      if(el) el.disabled = !enabled;
-    });
-  }
-
-  // ---- Share link (one active token) ----
-  function makeShareToken(){
-    // short + long to reduce transcription errors but still high entropy
-    return crypto.randomUUID().replaceAll("-","") + crypto.randomUUID().replaceAll("-","");
-  }
-
-async function createOrReplaceShareLink(){
-  if(!VAULT_ID) return;
-  setSync("Saving…");
-  try{
-    const token = makeShareToken();
-
-    // Write active token inside the vault (owner view)
-    await setDoc(shareDoc(), {
-      token,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    }, {merge:false});
-
-    // Reverse lookup so ?share=TOKEN can find vaultId
-    await setDoc(doc(db, "shares", token), {
-      vaultId: VAULT_ID,
-      createdAt: serverTimestamp()
-    }, {merge:false});
-
-    SHARE_TOKEN = token;
-    updateShareUI();
-    setSync("Synced");
-  }catch(e){
-    console.error(e);
-    setSync("Sync error (share)");
-    alert("Could not create share link. Check rules.");
-  }
-}
-
-async function revokeShareLink(){
-  if(!VAULT_ID) return;
-  const ok = confirm("Revoke the share link?");
-  if(!ok) return;
-
-  setSync("Saving…");
-  try{
-    // delete reverse lookup first (if it exists)
-    if(SHARE_TOKEN){
-      await deleteDoc(doc(db, "shares", SHARE_TOKEN)).catch(()=>{});
-    }
-
-    // delete active token in vault
-    await deleteDoc(shareDoc()).catch(()=>{});
-
-    SHARE_TOKEN = null;
-    updateShareUI();
-    setSync("Synced");
-  }catch(e){
-    console.error(e);
-    setSync("Sync error (share)");
-    alert("Could not revoke share link. Check rules.");
-  }
-}
-
-  
-  async function copyShareLink(){
-    if(!SHARE_TOKEN) return;
-    const link = currentShareLink(SHARE_TOKEN);
-    try{
-      await navigator.clipboard.writeText(link);
-      alert("Share link copied.");
-    }catch{
-      prompt("Copy this share link:", link);
-    }
-  }
-
-  function updateShareUI(){
-    const box = $("shareLinkBox");
-    const copyBtn = $("copyShareBtn");
-    const revokeBtn = $("revokeShareBtn");
-    if(!box || !copyBtn || !revokeBtn) return;
-
-    if(SHARE_TOKEN){
-      box.style.display = "block";
-      box.textContent = currentShareLink(SHARE_TOKEN);
-      copyBtn.style.display = "inline-block";
-      revokeBtn.style.display = "inline-block";
-    }else{
-      box.style.display = "none";
-      box.textContent = "";
-      copyBtn.style.display = "none";
-      revokeBtn.style.display = "none";
-    }
-  }
-
-  // ---- Listeners ----
-  async function startListeners(){
-    unsubEpisodes?.(); unsubDraft?.(); unsubShare?.();
-
-    unsubEpisodes = onSnapshot(query(episodeColl(), orderBy("startAt","desc")), (snap)=>{
-      const list = [];
-      snap.forEach(d=>{
-        const v = d.data();
-        list.push({...v, id: d.id});
-      });
-      EPISODES = list;
-      updateKPIs();
-      renderHistory();
-      refreshReport();
-      setSync("Synced");
-    }, (err)=>{
-      console.error(err);
-      setSync("Sync error (episodes)");
-    });
-
-    unsubDraft = onSnapshot(draftDoc(), (snap)=>{
-      DRAFT = snap.exists() ? snap.data() : null;
-      updateDraftHomeCard();
-    }, (err)=>{
-      console.error(err);
-      setSync("Sync error (draft)");
-    });
-
-    unsubShare = onSnapshot(shareDoc(), (snap)=>{
-      SHARE_TOKEN = snap.exists() ? (snap.data().token || null) : null;
-      updateShareUI();
-    }, ()=>{});
-  }
-
-  // ---- Share view loader ----
-  async function loadSharedReport(token){
-    // Find the vault that has share.active.token == token
-    // We can't query across all vaults without an index/rules; so this approach requires you to
-    // store a reverse mapping doc in /shares/{token} -> {vaultId}.
-    //
-    // To keep things simple, we support share view ONLY if you also create:
-    // /shares/{token} { vaultId }
-    //
-    // If you don't have that yet, you can ignore share view.
-    try{
-      const reverse = await getDoc(doc(db, "shares", token));
-      if(!reverse.exists()){
-        $("shareError").style.display = "block";
-        return;
+        setSync("Synced");
+        closeLogModal();
+        renderHistory();
+        renderExport();
+        renderHomeGlance();
+      }catch(e){
+        console.error(e);
+        setSync("Sync error");
+        alert("Could not save. Check connection/rules.");
       }
-      const vaultId = reverse.data().vaultId;
-      if(!vaultId){
-        $("shareError").style.display = "block";
-        return;
-      }
-
-      // load episodes read-only
-      const epsSnap = await getDocs(query(collection(db, "vaults", vaultId, "episodes"), orderBy("startAt","desc")));
-      const list = [];
-      epsSnap.forEach(d=>list.push(d.data()));
-      const range = "30";
-      const filtered = filterByRange(list, range).sort((a,b)=> (new Date(a.startAt||0)-new Date(b.startAt||0)));
-
-      $("shareGeneratedAt").textContent = fmtDateTime(new Date());
-      $("shareSummary").textContent = buildSummaryText(filtered);
-      rowsForReport(filtered, "shareTbody");
-
-      // Wire share view buttons
-      bindClick("sharePrintBtn", ()=>window.print());
-      bindClick("shareDownloadCsvBtn", ()=>downloadCsv(filtered, "chest_pain_shared_report.csv"));
-    }catch(e){
-      console.error(e);
-      const err = $("shareError");
-      if(err) err.style.display = "block";
     }
-  }
 
-  // ---- Input wiring ----
-  function hookInputs(){
-    bindChange("ongoing", ()=>{
-      const ongoing = $("ongoing").value === "true";
-      if($("endAtWrap")) $("endAtWrap").style.display = ongoing ? "none" : "block";
-      scheduleDraftSave();
-    });
-
-    ["startAt","endAt"].forEach(id=>{
-      bindChange(id, scheduleDraftSave);
-    });
-
-    bindInput("severity", ()=>{
-      if($("severityVal")) $("severityVal").textContent = $("severity").value;
-    });
-    bindChange("severity", scheduleDraftSave);
-
-    bindInput("notes", ()=>{
-      if($("notesCount")) $("notesCount").textContent = String(($("notes").value||"").length);
-      scheduleDraftSave();
-    });
-
-    bindInput("painTypeOtherText", ()=>{
-      if($("painTypeOtherCount")) $("painTypeOtherCount").textContent = String(($("painTypeOtherText").value||"").length);
-      scheduleDraftSave();
-    });
-
-    ["v_hr","v_spo2","v_bpsys","v_bpdia"].forEach(id=>{
-      bindInput(id, scheduleDraftSave);
-      bindChange(id, scheduleDraftSave);
-    });
-  }
-
-  // ---- Navigation wiring ----
-  function wireNav(){
-    bindClick("navHome", ()=> setView("Home"));
-    bindClick("navHistory", ()=> { setView("History"); renderHistory(); });
-    bindClick("navExport", ()=> { setView("Export"); refreshReport(); });
-    bindClick("navLog", ()=> { showModal(); });
-
-    bindClick("tabHome", ()=> setView("Home"));
-    bindClick("tabHistory", ()=> { setView("History"); renderHistory(); });
-    bindClick("tabExport", ()=> { setView("Export"); refreshReport(); });
-    bindClick("tabLog", ()=> { showModal(); });
-
-    // Home primary log
-    bindClick("homeLogNow", ()=>{
-      resetFormToDefaults();
-      showModal();
-      scheduleDraftSave();
-    });
-
-    // Resume draft
-    bindClick("resumeDraftBtn", ()=>{
-      if(DRAFT){
-        populateFormFromObj(DRAFT);
-        showModal();
-      }else{
-        resetFormToDefaults();
-        showModal();
-      }
-    });
-
-    // Draft discard on home card
-    bindClick("discardDraftBtn", discardDraftEverywhere);
-
-    // Unique link buttons
-    bindClick("copyUidLinkBtn2", copyUidLink);
-    bindClick("loadUidBtn", loadExistingUid);
-    bindClick("toggleUidLink", ()=>{
-      const wrap = $("uidLinkBoxWrap");
-      const btn = $("toggleUidLink");
-      if(!wrap || !btn) return;
-      const show = wrap.style.display !== "block";
-      wrap.style.display = show ? "block" : "none";
-      btn.textContent = show ? "Hide link" : "Show link";
-    });
-
-    // History filters
-    bindChange("historyRange", renderHistory);
-    bindChange("historySeverity", renderHistory);
-
-    // Export
-    bindClick("refreshReportBtn", refreshReport);
-    bindChange("exportRange", refreshReport);
-    bindClick("printBtn", ()=> window.print());
-    bindClick("downloadCsvBtn", ()=>{
-      const list = filterByRange(EPISODES, $("exportRange")?.value || "30")
-        .sort((a,b)=> (new Date(a.startAt||0)-new Date(b.startAt||0)));
-      downloadCsv(list, "chest_pain_report.csv");
-    });
-    bindClick("exportAllCsvBtn", ()=>{
-      const list = [...EPISODES].sort((a,b)=> (new Date(a.startAt||0)-new Date(b.startAt||0)));
-      downloadCsv(list, "chest_pain_all_data.csv");
-    });
-
-    bindClick("clearAllBtn", async ()=>{
-      const ok = confirm("Clear ALL data (device + Firebase)? This cannot be undone.");
+    async function deleteEditingLog(){
+      if(!(logMode==="edit" && editingId)) return;
+      const ok = confirm("Delete this log?");
       if(!ok) return;
+      try{
+        setSync("Saving…");
+        await deleteDoc(doc(db, "vaults", VAULT_ID, "logs", editingId));
+        setSync("Synced");
+        closeLogModal();
+        renderHistory();
+        renderExport();
+        renderHomeGlance();
+      }catch(e){
+        console.error(e);
+        setSync("Sync error");
+        alert("Could not delete. Check connection/rules.");
+      }
+    }
 
+    // ----- Rendering -----
+    function renderHistory(){
+      const rangeVal = histRange.value;
+      const sevVal = histSev.value;
+      const list = filterLogs(rangeVal, sevVal);
+
+      histList.innerHTML = "";
+      histEmpty.style.display = list.length ? "none" : "";
+
+      list.forEach(l=>{
+        const t = l.when?.toDate ? l.when.toDate() : (l.when instanceof Date ? l.when : new Date(l.when));
+        const {whenLine} = fmtDateTime(t);
+
+        const card = document.createElement("div");
+        card.className = "logcard";
+        card.dataset.id = l.id;
+
+        card.innerHTML = `
+          <div class="loghead">
+            <div style="min-width:0">
+              <div class="logwhen">${whenLine}</div>
+              <div class="logmeta">${(l.painType || "—")} · ${(l.location || "—")} · ${(l.activity || "—")}</div>
+            </div>
+            <div class="logright">
+              <div class="sev">${Number(l.severity ?? 0)}/10</div>
+              <div class="dur">${l.duration || "—"}</div>
+            </div>
+          </div>
+        `;
+
+        card.addEventListener("click", ()=>{
+          // Open in edit mode
+          openLogModal("edit", l);
+        });
+
+        histList.appendChild(card);
+      });
+    }
+
+    function renderHomeGlance(){
+      const last7 = logsCache.filter(l=>{
+        const t = l.when?.toDate ? l.when.toDate() : new Date(l.when);
+        return t >= daysAgo(7);
+      });
+      const last30 = logsCache.filter(l=>{
+        const t = l.when?.toDate ? l.when.toDate() : new Date(l.when);
+        return t >= daysAgo(30);
+      });
+
+      glance7.textContent = String(last7.length);
+      glance30.textContent = String(last30.length);
+
+      const sorted = [...logsCache].sort((a,b)=>{
+        const ta = a.when?.toMillis ? a.when.toMillis() : new Date(a.when).getTime();
+        const tb = b.when?.toMillis ? b.when.toMillis() : new Date(b.when).getTime();
+        return tb-ta;
+      });
+      const last = sorted[0];
+      glanceLastSev.textContent = last ? `${Number(last.severity ?? 0)}/10` : "—";
+
+      // Most common onset activity in last 30 days
+      const counts = new Map();
+      last30.forEach(l=>{
+        const k = l.activity || "—";
+        counts.set(k, (counts.get(k) || 0) + 1);
+      });
+      let best = null, bestN = 0;
+      for(const [k,n] of counts.entries()){
+        if(n > bestN){ bestN = n; best = k; }
+      }
+      glanceCommonActivity.textContent = best ? `${best}` : "—";
+    }
+
+    function renderExport(){
+      const rangeVal = expRange.value;
+      const list = filterLogs(rangeVal, "all");
+
+      reportGen.textContent = new Date().toLocaleString();
+      if(!list.length){
+        reportSummary.textContent = "No episodes in this range.";
+        reportEpisodes.textContent = "—";
+        return;
+      }
+
+      const total = list.length;
+      const avg = (list.reduce((s,l)=>s+Number(l.severity??0),0)/total).toFixed(1);
+      const max = Math.max(...list.map(l=>Number(l.severity??0)));
+      // common activity
+      const counts = new Map();
+      list.forEach(l=>{
+        const k = l.activity || "—";
+        counts.set(k, (counts.get(k)||0)+1);
+      });
+      let best=null,bestN=0;
+      for(const [k,n] of counts.entries()){ if(n>bestN){bestN=n;best=k;} }
+
+      reportSummary.textContent = `Total episodes: ${total}. Average severity: ${avg}/10 (max ${max}/10). Most common onset activity: ${best} (${bestN}).`;
+
+      // Episodes mini-table text (kept simple for mobile)
+      reportEpisodes.innerHTML = list.slice(0, 25).map(l=>{
+        const t = l.when?.toDate ? l.when.toDate() : new Date(l.when);
+        const {date,time} = fmtDateTime(t);
+        const meta = `${(l.painType||"—")} · ${(l.location||"—")} · ${(l.activity||"—")}`;
+        const dur = l.duration || "—";
+        return `<div style="padding:8px 0;border-top:1px solid rgba(255,255,255,.08)">
+          <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+            <div style="min-width:0">
+              <div style="font-weight:900;white-space:nowrap">${date} · ${time}</div>
+              <div class="tiny" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${meta}</div>
+            </div>
+            <div style="text-align:right;white-space:nowrap;font-weight:900">${Number(l.severity??0)}/10</div>
+          </div>
+          <div class="tiny" style="margin-top:2px">Duration: ${dur}</div>
+        </div>`;
+      }).join("");
+    }
+
+    // ----- Share link (active + reverse lookup) -----
+    async function createOrReplaceShareLink(){
+      if(!VAULT_ID) return;
       setSync("Saving…");
       try{
-        // delete draft
-        await deleteDoc(draftDoc()).catch(()=>{});
+        const token = makeShareToken();
 
-        // delete share
-        await deleteDoc(shareDoc()).catch(()=>{});
+        await setDoc(shareDoc(), { token, createdAt: serverTimestamp(), updatedAt: serverTimestamp() }, {merge:false});
+        await setDoc(doc(db, "shares", token), { vaultId: VAULT_ID, createdAt: serverTimestamp() }, {merge:false});
 
-        // delete episodes
-        const snap = await getDocs(collection(db, "vaults", VAULT_ID, "episodes"));
-        const deletions = [];
-        snap.forEach(d=>deletions.push(deleteDoc(d.ref)));
-        await Promise.allSettled(deletions);
-
-        EPISODES = [];
-        DRAFT = null;
-        SHARE_TOKEN = null;
+        SHARE_TOKEN = token;
         updateShareUI();
-        updateDraftHomeCard();
-        updateKPIs();
-        renderHistory();
-        refreshReport();
-        resetFormToDefaults();
         setSync("Synced");
       }catch(e){
         console.error(e);
-        setSync("Sync error (clear)");
-        alert("Could not clear everything. Check rules.");
+        setSync("Sync error (share)");
+        alert("Could not create share link. Check rules.");
       }
-    });
-
-    // Share link buttons
-    bindClick("createShareBtn", createOrReplaceShareLink);
-    bindClick("copyShareBtn", copyShareLink);
-    bindClick("revokeShareBtn", revokeShareLink);
-
-    // ---- CRITICAL FIX: Modal buttons now work ----
-    bindClick("closeSheet", closeLogSheet);
-    bindClick("closeSheetFooter", closeLogSheet);
-
-    bindClick("discardDraftBtnHeader", discardDraftEverywhere);
-    bindClick("discardDraftBtnFooter", discardDraftEverywhere);
-
-    bindClick("saveSheet", saveLog);
-    bindClick("saveSheetInline", saveLog);
-  }
-
-  // ---- Auth ----
-  async function ensureAuth(){
-    await signInAnonymously(auth);
-  }
-
-  // ---- Main ----
-  async function main(){
-    setSync("Starting…");
-
-    const shareToken = getShareFromUrl();
-    if(shareToken){
-      setView("Share");
-      await ensureAuth();
-      await loadSharedReport(shareToken);
-      setSync("Synced");
-      return;
+    }
+    async function revokeShareLink(){
+      if(!VAULT_ID) return;
+      const ok = confirm("Revoke the share link?");
+      if(!ok) return;
+      setSync("Saving…");
+      try{
+        if(SHARE_TOKEN){
+          await deleteDoc(doc(db, "shares", SHARE_TOKEN)).catch(()=>{});
+        }
+        await deleteDoc(shareDoc()).catch(()=>{});
+        SHARE_TOKEN = null;
+        updateShareUI();
+        setSync("Synced");
+      }catch(e){
+        console.error(e);
+        setSync("Sync error (share)");
+        alert("Could not revoke share link. Check rules.");
+      }
     }
 
-    await ensureVaultId();
-    applyVaultToUI();
-    await ensureAuth();
+    function updateShareUI(){
+      const has = !!SHARE_TOKEN;
+      btnCopyShare.disabled = !has;
+      btnRevokeShare.disabled = !has;
+    }
 
-    renderAllChips();
-    hookInputs();
-    wireNav();
-    resetFormToDefaults();
-    await startListeners();
+    // ----- Export actions -----
+    function downloadCSV(){
+      const rangeVal = expRange.value;
+      const list = filterLogs(rangeVal, "all");
+      const header = [
+        "when","severity","duration","painType","painTypeOther","location","locationOther",
+        "activity","activityOther","relief","reliefOther","symptoms","notes","hr","bpSys","bpDia"
+      ];
+      const lines = [header.join(",")];
+      list.forEach(l=>{
+        const t = l.when?.toDate ? l.when.toDate() : new Date(l.when);
+        const row = [
+          t.toISOString(),
+          l.severity ?? "",
+          l.duration ?? "",
+          l.painType ?? "",
+          l.painTypeOther ?? "",
+          l.location ?? "",
+          l.locationOther ?? "",
+          l.activity ?? "",
+          l.activityOther ?? "",
+          l.relief ?? "",
+          l.reliefOther ?? "",
+          (l.symptoms || []).join("; "),
+          l.notes ?? "",
+          l.hr ?? "",
+          l.bpSys ?? "",
+          l.bpDia ?? ""
+        ].map(csvEscape).join(",");
+        lines.push(row);
+      });
 
-    refreshReport();
-    renderHistory();
-    updateShareUI();
-    setSync("Synced");
-  }
+      const blob = new Blob([lines.join("\n")], {type:"text/csv;charset=utf-8"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `chest-pain-${rangeVal}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(()=>URL.revokeObjectURL(a.href), 800);
+    }
 
-  main().catch((e)=>{
-    console.error(e);
-    setSync("Sync error");
-    alert("The app could not start. Check Firebase config/rules and your internet connection.");
-  });
-</script>
+    function printPDF(){
+      window.print();
+    }
+
+    // ----- Unique link workflow -----
+    function uniqueLink(){
+      const u = new URL(location.origin + location.pathname);
+      u.searchParams.set("uid", VAULT_ID);
+      return u.toString();
+    }
+
+    function copyText(text){
+      return navigator.clipboard.writeText(text).catch(async ()=>{
+        // fallback
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        ta.remove();
+      });
+    }
+
+    function openShowLink(){
+      linkText.value = uniqueLink();
+      linkModal.classList.add("on");
+    }
+
+    async function loadExistingPrompt(){
+      const entered = prompt("Paste your saved link or enter the ID:");
+      if(!entered) return;
+      try{
+        let id = entered.trim();
+        if(id.includes("uid=")){
+          const u = new URL(id);
+          id = u.searchParams.get("uid") || id;
+        }
+        if(!/^[a-f0-9]{16,128}$/i.test(id)){
+          alert("That doesn’t look like a valid ID.");
+          return;
+        }
+        VAULT_ID = id;
+        setQs("uid", VAULT_ID);
+        uidShort.textContent = shortId(VAULT_ID);
+        await initVaultStreams();
+        alert("Loaded.");
+      }catch(e){
+        console.error(e);
+        alert("Could not load that ID.");
+      }
+    }
+
+    // ----- Streams -----
+    async function initVaultStreams(){
+      if(!VAULT_ID) return;
+
+      // Listen logs
+      if(logsUnsub) logsUnsub();
+      const qy = query(logsCol(), orderBy("when","desc"), limit(500));
+      logsUnsub = onSnapshot(qy, (snap)=>{
+        logsCache = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+        setSync("Synced");
+        renderHomeGlance();
+        if(viewHistory.style.display !== "none") renderHistory();
+        if(viewExport.style.display !== "none") renderExport();
+      }, (err)=>{
+        console.error(err);
+        setSync("Sync error");
+      });
+
+      // Draft
+      onSnapshot(draftDoc(), (snap)=>{
+        draft = snap.exists() ? snap.data() : null;
+      });
+
+      // Share active
+      onSnapshot(shareDoc(), (snap)=>{
+        SHARE_TOKEN = snap.exists() ? (snap.data().token || null) : null;
+        updateShareUI();
+      });
+    }
+
+    // ----- Tabs UI setup -----
+    function mountTabbar(){
+      const tabsWrap = document.createElement("div");
+      tabsWrap.className = "tabs";
+      tabsWrap.innerHTML = `<div class="tabbar">
+        <button class="tab active" id="tabHome">Home</button>
+        <button class="tab" id="tabLog">Log</button>
+        <button class="tab" id="tabHistory">History</button>
+        <button class="tab" id="tabExport">Export</button>
+      </div>`;
+      document.body.appendChild(tabsWrap);
+
+      document.getElementById("tabHome").addEventListener("click", ()=>showView("home"));
+      document.getElementById("tabHistory").addEventListener("click", ()=>showView("history"));
+      document.getElementById("tabExport").addEventListener("click", ()=>showView("export"));
+      document.getElementById("tabLog").addEventListener("click", ()=>{
+        openLogModal("new");
+      });
+    }
+
+    // ----- Event wiring -----
+    function wire(){
+      buildChips();
+      mountTabbar();
+
+      // Severity label + autosave draft
+      fSev.addEventListener("input", ()=>{
+        sevVal.textContent = String(fSev.value);
+        scheduleDraftSave();
+      });
+
+      // Draft autosave fields (new mode only)
+      [fNotes,fHR,fBPsys,fBPdia,fTypeOther,fLocOther,fActOther,fRelOther].forEach(el=>{
+        el.addEventListener("input", scheduleDraftSave);
+      });
+      // chips autosave
+      [durChips,typeChips,locChips,actChips,relChips,symChips].forEach(container=>{
+        container.addEventListener("click", scheduleDraftSave);
+      });
+
+      // Open log from home
+      btnLogNow.addEventListener("click", ()=>openLogModal("new"));
+
+      // Close/discard/save buttons (ensure they always work)
+      const closeAll = ()=>closeLogModal();
+      btnClose.addEventListener("click", closeAll);
+      btnCloseTop.addEventListener("click", closeAll);
+
+      btnDiscard.addEventListener("click", ()=>{
+        if(logMode==="edit"){
+          // In edit mode, discard means "Delete" is explicit; discard just closes
+          closeLogModal();
+        }else{
+          discardDraft();
+        }
+      });
+      btnDiscardTop.addEventListener("click", ()=>{
+        if(logMode==="edit"){
+          // In edit mode, top "Discard" becomes "Delete"
+          deleteEditingLog();
+        }else{
+          discardDraft();
+        }
+      });
+
+      btnSave.addEventListener("click", saveLog);
+      btnSavePrimary.addEventListener("click", saveLog);
+
+      // When entering edit mode, change top-right discard label to Delete
+      const observer = new MutationObserver(()=>{
+        if(logMode==="edit"){
+          btnDiscardTop.textContent = "Delete";
+          btnDiscardTop.classList.add("danger");
+          btnDiscard.textContent = "Close";
+        }else{
+          btnDiscardTop.textContent = "Discard";
+          btnDiscardTop.classList.remove("danger");
+          btnDiscard.textContent = "Discard";
+        }
+      });
+      observer.observe(logModal, {attributes:true, attributeFilter:["class"]});
+
+      // History filters
+      histRange.addEventListener("change", renderHistory);
+      histSev.addEventListener("change", renderHistory);
+
+      // Export
+      btnRefreshExport.addEventListener("click", renderExport);
+      expRange.addEventListener("change", renderExport);
+      btnCSV.addEventListener("click", downloadCSV);
+      btnPrint.addEventListener("click", printPDF);
+
+      // Share
+      btnCreateShare.addEventListener("click", createOrReplaceShareLink);
+      btnRevokeShare.addEventListener("click", revokeShareLink);
+      btnCopyShare.addEventListener("click", ()=>{
+        if(!SHARE_TOKEN) return;
+        const u = new URL(location.origin + location.pathname);
+        u.searchParams.set("share", SHARE_TOKEN);
+        copyText(u.toString());
+        alert("Copied share link.");
+      });
+
+      // Unique link buttons
+      btnCopyLink.addEventListener("click", ()=>{
+        copyText(uniqueLink());
+        alert("Copied.");
+      });
+      btnCopyLink2.addEventListener("click", ()=>{
+        copyText(uniqueLink());
+        alert("Copied.");
+      });
+      btnShowLink.addEventListener("click", openShowLink);
+      btnCloseLinkModal.addEventListener("click", ()=>linkModal.classList.remove("on"));
+      btnLoadExisting.addEventListener("click", loadExistingPrompt);
+    }
+
+    // ----- Boot -----
+    async function boot(){
+      setSync("Starting…");
+
+      // Anon auth is required for Firestore security rules to work safely.
+      // Even though "no login", this is invisible to the user.
+      await signInAnonymously(auth);
+
+      onAuthStateChanged(auth, async (u)=>{
+        if(!u) return;
+
+        // Determine vault id:
+        // 1) URL ?uid=
+        // 2) localStorage lastVaultId
+        // 3) generate new
+        const urlUid = qs("uid");
+        const saved = localStorage.getItem("cpt_lastVaultId");
+        VAULT_ID = urlUid || saved || makeVaultId();
+
+        localStorage.setItem("cpt_lastVaultId", VAULT_ID);
+        setQs("uid", VAULT_ID);
+
+        uidShort.textContent = shortId(VAULT_ID);
+
+        await initVaultStreams();
+        wire();
+        renderHomeGlance();
+        showView("home");
+
+        setSync("Synced");
+      });
+
+      // Support shared view (read-only report) if ?share=
+      const share = qs("share");
+      if(share){
+        // For simplicity, just resolve and load that vault, then show Export.
+        try{
+          setSync("Starting…");
+          const sdoc = await getDoc(doc(db, "shares", share));
+          if(!sdoc.exists()){
+            alert("Share link not found.");
+            return;
+          }
+          const {vaultId} = sdoc.data();
+          if(vaultId){
+            VAULT_ID = vaultId;
+            uidShort.textContent = shortId(VAULT_ID);
+            await initVaultStreams();
+            showView("export");
+            setSync("Synced");
+          }
+        }catch(e){
+          console.error(e);
+          setSync("Sync error");
+          alert("Could not load share link.");
+        }
+      }
+    }
+
+    boot();
+  </script>
 </body>
 </html>
