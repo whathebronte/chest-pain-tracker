@@ -185,6 +185,10 @@
       justify-content:space-between;
       gap:12px;
     }
+    .item-main{min-width:0; flex:1 1 auto;}
+    .item-title{display:block; white-space:nowrap;}
+    .item-actions{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;}
+    .item-actions button{padding:7px 10px; font-size:12px; border-radius:10px;}
 
     .table{
       width:100%;
@@ -850,6 +854,7 @@
   let EPISODES = [];
   let DRAFT = null;
   let SHARE_TOKEN = null;
+  let EDITING_EPISODE_ID = null;
 
   let draftTimer = null;
   let unsubEpisodes = null;
@@ -1019,7 +1024,10 @@
   function fmtDateTime(d){
     const dt = (d instanceof Date) ? d : new Date(d);
     if(isNaN(dt.getTime())) return "—";
-    return dt.toLocaleString(undefined, { year:"numeric", month:"short", day:"2-digit", hour:"2-digit", minute:"2-digit" });
+    const base = dt.toLocaleString(undefined, {
+      year:"numeric", month:"short", day:"2-digit", hour:"2-digit", minute:"2-digit"
+    });
+    return base.replace(/(\d)\s([AP]M)$/i, "$1\u202F$2");
   }
   function minutesBetween(a,b){
     if(!a || !b) return null;
@@ -1355,11 +1363,13 @@
       const div = document.createElement("div");
       div.className = "item";
       const left = document.createElement("div");
+      left.className = "item-main";
       const right = document.createElement("div");
       right.style.textAlign = "right";
       right.style.minWidth = "90px";
 
       const title = document.createElement("b");
+      title.className = "item-title";
       title.textContent = fmtDateTime(ep.startAt || new Date());
 
       const sub = document.createElement("span");
@@ -1369,6 +1379,23 @@
 
       left.appendChild(title);
       left.appendChild(sub);
+
+      const actions = document.createElement("div");
+      actions.className = "item-actions no-print";
+
+      const editBtn = document.createElement("button");
+      editBtn.className = "ghost";
+      editBtn.textContent = "Edit";
+      editBtn.addEventListener("click", ()=>startEditEpisode(ep));
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "danger";
+      deleteBtn.textContent = "Delete";
+      deleteBtn.addEventListener("click", ()=>deleteEpisode(ep.id));
+
+      actions.appendChild(editBtn);
+      actions.appendChild(deleteBtn);
+      left.appendChild(actions);
 
       const sevEl = document.createElement("b");
       sevEl.textContent = `${ep.severity ?? "—"}/10`;
@@ -1384,6 +1411,37 @@
 
       wrap.appendChild(div);
     });
+  }
+
+  function clearEditingState(){
+    EDITING_EPISODE_ID = null;
+    if($("sheetTitle")) $("sheetTitle").textContent = "Log an episode";
+    if($("sheetSub")) $("sheetSub").textContent = "Draft saves automatically while you type.";
+  }
+
+  function startEditEpisode(ep){
+    if(!ep?.id) return;
+    EDITING_EPISODE_ID = ep.id;
+    if($("sheetTitle")) $("sheetTitle").textContent = "Edit episode";
+    if($("sheetSub")) $("sheetSub").textContent = "Update this entry, then save your changes.";
+    populateFormFromObj(ep);
+    showModal();
+  }
+
+  async function deleteEpisode(id){
+    if(!VAULT_ID || !id) return;
+    const ok = confirm("Delete this entry? This cannot be undone.");
+    if(!ok) return;
+
+    setSync("Saving…");
+    try{
+      await deleteDoc(doc(db, "vaults", VAULT_ID, "episodes", id));
+      setSync("Synced");
+    }catch(e){
+      console.error(e);
+      setSync("Sync error (delete)");
+      alert("Could not delete this entry. Check your connection / rules.");
+    }
   }
 
   function buildSummaryText(list){
@@ -1497,6 +1555,7 @@
   function scheduleDraftSave(){
     if(getShareFromUrl()) return;
     if(!VAULT_ID) return;
+    if(EDITING_EPISODE_ID) return;
 
     setSync("Saving…");
     if(draftTimer) clearTimeout(draftTimer);
@@ -1518,6 +1577,16 @@
 
   // ---- Critical fix: wire modal buttons to real actions ----
   function closeLogSheet(){
+    if(EDITING_EPISODE_ID){
+      const leave = confirm("Discard unsaved edits?");
+      if(!leave) return;
+      clearEditingState();
+      if(DRAFT){
+        populateFormFromObj(DRAFT);
+      }else{
+        resetFormToDefaults();
+      }
+    }
     hideModal();
   }
 
@@ -1555,19 +1624,24 @@
     setSaveButtonsEnabled(false);
 
     try{
-      const id = crypto.randomUUID();
+      const id = EDITING_EPISODE_ID || crypto.randomUUID();
       await setDoc(doc(db, "vaults", VAULT_ID, "episodes", id), {
         ...data,
-        createdAt: serverTimestamp(),
+        createdAt: EDITING_EPISODE_ID ? (EPISODES.find(e=>e.id===EDITING_EPISODE_ID)?.createdAt || serverTimestamp()) : serverTimestamp(),
         updatedAt: serverTimestamp()
       });
 
-      // clear draft after successful save
-      await deleteDoc(draftDoc()).catch(()=>{});
+      // clear draft after successful save when creating a new entry
+      if(!EDITING_EPISODE_ID){
+        await deleteDoc(draftDoc()).catch(()=>{});
+      }
 
-      DRAFT = null;
-      updateDraftHomeCard();
+      if(!EDITING_EPISODE_ID){
+        DRAFT = null;
+        updateDraftHomeCard();
+      }
       resetFormToDefaults();
+      clearEditingState();
       hideModal();
       setSync("Synced");
     }catch(e){
@@ -1802,6 +1876,7 @@ async function revokeShareLink(){
 
     // Home primary log
     bindClick("homeLogNow", ()=>{
+      clearEditingState();
       resetFormToDefaults();
       showModal();
       scheduleDraftSave();
@@ -1809,6 +1884,7 @@ async function revokeShareLink(){
 
     // Resume draft
     bindClick("resumeDraftBtn", ()=>{
+      clearEditingState();
       if(DRAFT){
         populateFormFromObj(DRAFT);
         showModal();
